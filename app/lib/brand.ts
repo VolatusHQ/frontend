@@ -8,4 +8,4 @@
 export const BRAND = "Volatus";
 export const TAGLINE =
   "Liquidity mining is an insurance premium paid in inflation. Volatus turns it into a market.";
-export const REPO_URL = "https://github.com/CodeBlocker52/sigma";
+export const REPO_URL = "https://github.com/VolatusHQ";
