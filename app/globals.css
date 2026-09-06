@@ -151,3 +151,151 @@ em {
   font-style: italic;
   color: var(--pink);
 }
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 13px 26px;
+  border-radius: var(--r-full);
+  font-family: var(--font-ui);
+  font-size: var(--t4);
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.18s var(--ease-out), background 0.18s, border-color 0.18s, color 0.18s;
+}
+.btn--primary {
+  background: var(--bone);
+  color: var(--ink);
+}
+.btn--primary:hover {
+  transform: translateY(-2px);
+  background: #fff;
+}
+.btn--ghost {
+  border-color: var(--hair);
+  color: var(--bone);
+}
+.btn--ghost:hover {
+  transform: translateY(-2px);
+  border-color: var(--bone-3);
+  background: rgba(243, 236, 227, 0.04);
+}
+.btn--sm {
+  padding: 9px 18px;
+  font-size: var(--t3);
+}
+
+.btn-row {
+  display: flex;
+  gap: var(--s3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ============================================================
+   Nav — sticky bar, Vercel / shadcn navbar idiom
+   ============================================================ */
+
+.navbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 50;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding-inline: clamp(16px, 4vw, 32px);
+  background: rgba(11, 7, 16, 0);
+  border-bottom: 1px solid transparent;
+  transition: background 0.3s var(--ease-out), backdrop-filter 0.3s, border-color 0.3s;
+}
+.navbar.is-scrolled {
+  background: rgba(11, 7, 16, 0.7);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border-bottom-color: var(--hair-2);
+}
+.navbar__inner {
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+}
+.navbar__left {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 3vw, 34px);
+}
+.navbar__brand {
+  display: flex;
+  align-items: center;
+}
+.navbar__brand img {
+  height: 24px;
+  width: auto;
+  display: block;
+}
+.navbar__menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.navbar__menu a {
+  padding: 7px 14px;
+  border-radius: var(--r-full);
+  font-size: var(--t3);
+  color: var(--bone-2);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.navbar__menu a:hover {
+  background: rgba(243, 236, 227, 0.08);
+  color: var(--bone);
+}
+.navbar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.navbar__btn {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding-inline: 16px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--hair);
+  font-size: var(--t3);
+  font-weight: 500;
+  color: var(--bone);
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s var(--ease-out);
+}
+.navbar__btn:hover {
+  background: rgba(243, 236, 227, 0.06);
+  border-color: var(--bone-3);
+  transform: translateY(-1px);
+}
+.navbar__btn--primary {
+  background: var(--bone);
+  border-color: var(--bone);
+  color: var(--ink);
+}
+.navbar__btn--primary:hover {
+  background: #fff;
+  border-color: #fff;
+}
+@media (max-width: 640px) {
+  .navbar__menu {
+    display: none;
+  }
+}
+
