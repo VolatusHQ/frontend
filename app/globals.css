@@ -514,6 +514,291 @@ em {
   }
 }
 
+/* ============================================================
+   Dial — a draggable ring on one side, a HUD readout on the other.
+   Replaces the feature / step card grids.
+   ============================================================ */
+
+.dial-block {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  align-items: center;
+  gap: clamp(32px, 6vw, 96px);
+}
+.dial-block--right {
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+}
+.dial-block--right .dial {
+  order: 2;
+}
+.dial-block--right .hud {
+  order: 1;
+}
+@media (max-width: 860px) {
+  .dial-block,
+  .dial-block--right {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: var(--s6);
+  }
+  .dial-block--right .dial,
+  .dial-block--right .hud {
+    order: 0;
+  }
+}
+
+.dial {
+  --dsize: min(70vw, 420px);
+  --radius: calc(var(--dsize) / 2 - clamp(52px, 9vw, 74px));
+  position: relative;
+  width: var(--dsize);
+  aspect-ratio: 1;
+  flex: none;
+  justify-self: center;
+}
+.dial__track {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.dial__circle {
+  fill: none;
+  stroke: rgba(243, 236, 227, 0.24);
+  stroke-width: 1.25;
+}
+.dial__tick {
+  stroke: rgba(243, 236, 227, 0.22);
+  stroke-width: 1.25;
+}
+
+.dial__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none;
+  transform: rotate(var(--rot));
+  transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.dial.is-dragging .dial__ring {
+  cursor: grabbing;
+  transition: none;
+}
+.dial__ring:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 8px;
+}
+
+.dial__slot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform: rotate(var(--a)) translateY(calc(-1 * var(--radius)));
+}
+.dial__icon {
+  position: absolute;
+  width: clamp(58px, 10vw, 86px);
+  height: auto;
+  transform: translate(-50%, -50%) rotate(calc(-1 * (var(--a) + var(--rot))));
+  transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s, filter 0.3s,
+    scale 0.3s;
+  opacity: 0.4;
+  scale: 1;
+  pointer-events: none;
+}
+.dial.is-dragging .dial__icon {
+  transition: opacity 0.2s, filter 0.2s, scale 0.2s;
+}
+.dial__slot.is-active .dial__icon {
+  opacity: 1;
+  scale: 1.32;
+  filter: drop-shadow(0 0 18px var(--accent)) drop-shadow(0 0 6px var(--accent));
+}
+
+.dial__needle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  height: 1px;
+  width: calc(50% - clamp(46px, 8vw, 64px));
+  background: linear-gradient(90deg, transparent, var(--bone-3));
+  transform-origin: left center;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.dial-block--right .dial__needle {
+  transform: translateY(-50%) rotate(180deg);
+}
+.dial__hub {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bone-2);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.dial__mark {
+  position: absolute;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--pink);
+  box-shadow: 0 0 16px var(--pink);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.dial-block--left .dial__mark {
+  right: -6px;
+}
+.dial-block--right .dial__mark {
+  left: -6px;
+}
+
+/* the HUD */
+.hud {
+  position: relative;
+  max-width: 46ch;
+}
+.hud__frame {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--s2);
+  width: min(420px, 100%);
+  padding: var(--s4) var(--s5);
+  border: 1px solid rgba(243, 236, 227, 0.28);
+  background: rgba(11, 7, 16, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  margin-bottom: var(--s4);
+  animation: hudIn 0.4s var(--ease-out);
+}
+@keyframes hudIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hud__dot {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--bone-3);
+  border-radius: 50%;
+  background: var(--ink);
+  transform: translateX(-50%);
+}
+.hud__c {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--bone-2);
+}
+.hud__c--tl {
+  top: -3px;
+  left: -3px;
+}
+.hud__c--tr {
+  top: -3px;
+  right: -3px;
+}
+.hud__c--bl {
+  bottom: -3px;
+  left: -3px;
+}
+.hud__c--br {
+  bottom: -3px;
+  right: -3px;
+}
+.hud__tag {
+  font-family: var(--font-mono);
+  font-size: var(--t1);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--bone-3);
+}
+.hud__title {
+  font-family: var(--font-display);
+  font-size: var(--d3);
+  line-height: 1.12;
+  font-style: italic;
+  text-wrap: balance;
+  color: var(--accent, var(--pink));
+}
+.hud__body {
+  color: var(--bone);
+  font-size: var(--t5);
+  line-height: 1.6;
+  max-width: 42ch;
+  padding: var(--s3) var(--s4);
+  background: rgba(11, 7, 16, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: hudIn 0.4s var(--ease-out) 0.05s both;
+}
+.hud__body code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  color: var(--bone);
+}
+.dial__link {
+  position: absolute;
+  top: 50%;
+  height: 1px;
+  width: clamp(70px, 15vw, 210px);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.dial-block--left .dial__link {
+  left: 100%;
+  background: linear-gradient(90deg, var(--bone-3), transparent);
+}
+.dial-block--right .dial__link {
+  right: 100%;
+  background: linear-gradient(270deg, var(--bone-3), transparent);
+}
+@media (max-width: 860px) {
+  .dial__link {
+    display: none;
+  }
+}
+@media (max-width: 860px) {
+  .hud {
+    text-align: center;
+  }
+  .hud__frame {
+    align-self: center;
+  }
+  .hud__body {
+    margin-inline: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dial__ring,
+  .dial__icon {
+    transition: none !important;
+  }
+  .hud__frame,
+  .hud__body {
+    animation: none;
+  }
+}
+
 
 /* ============================================================
    Scroll reveal
