@@ -340,6 +340,180 @@ em {
   margin-top: var(--s3);
 }
 
+/* ============================================================
+   Pipeline — the variance chain. Colourful, hover-lit.
+   ============================================================ */
+
+.pipeline-frame {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(18px, 2.4vw, 32px);
+  padding-block: clamp(8px, 1.5vw, 20px);
+}
+
+.pl-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 4px;
+}
+@media (max-width: 1080px) {
+  .pl-row {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  }
+}
+
+.pl-node {
+  flex: 1 1 0;
+  min-width: 128px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: clamp(16px, 2vw, 26px) clamp(10px, 1.5vw, 18px);
+  border: 1.5px solid var(--n-line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--n-fill), transparent);
+  box-shadow: inset 0 0 24px var(--n-inset);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.22s var(--ease-out), box-shadow 0.22s, background 0.22s, border-color 0.22s;
+}
+.pl-node:hover,
+.pl-node:focus-visible,
+.pl-node.is-lit {
+  transform: translateY(-5px);
+  border-color: var(--n);
+  background: linear-gradient(180deg, var(--n-fill-hi), var(--n-fill));
+  box-shadow: 0 0 30px var(--n-glow), inset 0 0 26px var(--n-inset);
+  outline: none;
+}
+/* the four inks */
+.pl-node--v {
+  --n: #9b6bff;
+  --n-line: rgba(155, 107, 255, 0.42);
+  --n-fill: rgba(155, 107, 255, 0.13);
+  --n-fill-hi: rgba(155, 107, 255, 0.32);
+  --n-inset: rgba(155, 107, 255, 0.12);
+  --n-glow: rgba(155, 107, 255, 0.5);
+}
+.pl-node--p {
+  --n: #ff3d9a;
+  --n-line: rgba(255, 61, 154, 0.44);
+  --n-fill: rgba(255, 61, 154, 0.14);
+  --n-fill-hi: rgba(255, 61, 154, 0.34);
+  --n-inset: rgba(255, 61, 154, 0.12);
+  --n-glow: rgba(255, 61, 154, 0.52);
+}
+.pl-node--y {
+  --n: #ffc93d;
+  --n-line: rgba(255, 201, 61, 0.44);
+  --n-fill: rgba(255, 201, 61, 0.13);
+  --n-fill-hi: rgba(255, 201, 61, 0.32);
+  --n-inset: rgba(255, 201, 61, 0.12);
+  --n-glow: rgba(255, 201, 61, 0.5);
+}
+.pl-node--w {
+  --n: #f3ece3;
+  --n-line: rgba(243, 236, 227, 0.4);
+  --n-fill: rgba(243, 236, 227, 0.09);
+  --n-fill-hi: rgba(243, 236, 227, 0.22);
+  --n-inset: rgba(243, 236, 227, 0.1);
+  --n-glow: rgba(243, 236, 227, 0.42);
+}
+.pl-node__label {
+  font-family: var(--font-mono);
+  font-size: clamp(15px, 1.5vw, 19px);
+  font-weight: 500;
+  color: var(--bone);
+  white-space: nowrap;
+}
+.pl-node__sub {
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 1vw, 12px);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--n);
+  white-space: nowrap;
+}
+
+.pl-wire {
+  flex: 0 0 clamp(24px, 4vw, 68px);
+  align-self: center;
+  position: relative;
+  height: 2px;
+  background: var(--hair);
+  overflow: hidden;
+}
+.pl-wire::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 46%;
+  background: linear-gradient(90deg, transparent, var(--pink), transparent);
+  transform: translateX(-120%);
+}
+.is-running .pl-wire::after {
+  animation: wireflow 2.6s linear infinite;
+  animation-delay: var(--wd, 0s);
+}
+@keyframes wireflow {
+  to {
+    transform: translateX(320%);
+  }
+}
+
+.pl-caption {
+  text-align: center;
+  font-size: clamp(13px, 1.35vw, 16px);
+  line-height: 1.5;
+  color: var(--bone-2);
+  min-height: 2.6em;
+  max-width: 62ch;
+  margin-inline: auto;
+  transition: opacity 0.2s;
+}
+.pl-caption strong {
+  color: var(--bone);
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .pl-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pl-node {
+    min-width: 0;
+  }
+  .pl-wire {
+    flex-basis: auto;
+    width: 2px;
+    height: clamp(18px, 5vw, 30px);
+    align-self: center;
+  }
+  .pl-wire::after {
+    width: 100%;
+    height: 46%;
+    background: linear-gradient(180deg, transparent, var(--pink), transparent);
+    transform: translateY(-120%);
+  }
+  .is-running .pl-wire::after {
+    animation: wireflow-v 2.6s linear infinite;
+    animation-delay: var(--wd, 0s);
+  }
+}
+@keyframes wireflow-v {
+  to {
+    transform: translateY(320%);
+  }
+}
+
 
 /* ============================================================
    Scroll reveal

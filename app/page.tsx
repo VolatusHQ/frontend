@@ -1,5 +1,6 @@
 import { Nav } from "./components/Nav";
 import { Hero } from "./sections/Hero";
+import { Flow } from "./sections/Features";
 
 export default function Page() {
   return (
@@ -7,6 +8,7 @@ export default function Page() {
       <Nav />
       <main>
         <Hero />
+        <Flow />
       </main>
     </>
   );
