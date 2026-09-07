@@ -927,6 +927,117 @@ em {
   margin-top: var(--s4);
 }
 
+/* ============================================================
+   FAQ
+   ============================================================ */
+
+.faq {
+  border-top: 1px solid var(--hair-2);
+}
+.faq__item {
+  border-bottom: 1px solid var(--hair-2);
+}
+.faq__q {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s5) 0;
+  background: none;
+  border: 0;
+  color: var(--bone);
+  font-family: var(--font-ui);
+  font-size: var(--t5);
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.faq__q:hover {
+  color: var(--pink);
+}
+.faq__chev {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform 0.3s var(--ease-out);
+}
+.faq__item.is-open .faq__chev {
+  transform: rotate(225deg) translate(-3px, -3px);
+}
+.faq__a {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.34s var(--ease-out);
+}
+.faq__item.is-open .faq__a {
+  grid-template-rows: 1fr;
+}
+.faq__a > div {
+  overflow: hidden;
+}
+.faq__a p {
+  color: var(--bone-2);
+  max-width: 68ch;
+  padding-bottom: var(--s5);
+}
+
+/* ============================================================
+   CTA + Footer
+   ============================================================ */
+
+.cta {
+  text-align: center;
+}
+.cta .h2 {
+  margin-inline: auto;
+}
+.cta .lede {
+  margin-inline: auto;
+  margin-top: var(--s4);
+}
+.cta .btn-row {
+  margin-top: var(--s6);
+}
+
+.footer {
+  border-top: 1px solid var(--hair-2);
+  padding: var(--s7) clamp(20px, 5vw, 56px);
+}
+.footer__inner {
+  max-width: 1120px;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s5);
+  flex-wrap: wrap;
+}
+.footer img {
+  height: 22px;
+  width: auto;
+  display: block;
+  opacity: 0.8;
+}
+.footer__meta {
+  display: flex;
+  gap: var(--s5);
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: var(--t2);
+  color: var(--bone-3);
+}
+.footer__meta a {
+  color: var(--bone-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hair);
+}
+.footer__meta a:hover {
+  color: var(--bone);
+}
 
 /* ============================================================
    Scroll reveal
