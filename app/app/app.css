@@ -1,0 +1,358 @@
+/* ============================================================
+   Volatus application stylesheet. DESIGN.md §15.
+
+   This file styles /app only. The landing page at / is styled by
+   globals.css and must not be touched by anything here.
+
+   Two guarantees live in this file:
+
+   1. Preflight is NOT imported. Tailwind's reset would reflow the
+      landing page, which shares the same document. Utilities are
+      class-based, so nothing bleeds. DESIGN.md §12.
+   2. The @theme block below remaps shadcn/ui onto this design system.
+      That block IS the enforcement — radius 0, panel fills, pink as
+      the one primary. Never restyle a primitive at the call site; if
+      it looks wrong, this file is wrong.
+   ============================================================ */
+
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@import "../tokens.css";
+
+/* ------------------------------------------------------------
+   shadcn's variable contract, mapped onto Volatus tokens.
+   ------------------------------------------------------------ */
+:root {
+  --background: var(--ink);
+  --foreground: var(--bone);
+
+  /* A plate: flat fill + hairline, radius 0. Never a tinted fill. §5 */
+  --card: var(--panel);
+  --card-foreground: var(--bone);
+  --popover: var(--panel-2);
+  --popover-foreground: var(--bone);
+
+  /* Pink is implied, and the one primary action per view. §9 */
+  --primary: var(--pink);
+  --primary-foreground: var(--ink);
+
+  --secondary: var(--panel-2);
+  --secondary-foreground: var(--bone);
+
+  --muted: var(--ink-2);
+  --muted-foreground: var(--bone-3);
+
+  --accent: var(--panel-2);
+  --accent-foreground: var(--bone);
+
+  /* No red in this system. Semantic failure borrows pink. §15.2 */
+  --destructive: var(--pink);
+  --destructive-foreground: var(--ink);
+
+  --border: var(--hair);
+  --input: var(--hair);
+  --ring: var(--pink);
+
+  /* §5: radius is 0 or a circle. Nothing between.
+     --r-soft (14px) is a landing-page exception and is not available here. */
+  --radius: 0px;
+
+  /* Explicit product decision, not a §3 revision: LONG/SHORT and candlestick
+     up/down use the standard trading red/green convention, scoped to the
+     order-entry and chart surfaces only. Nothing else in the system adopts
+     these — realized/implied/structure stay yellow/pink/violet. */
+  --up: #22c55e;
+  --down: #f23645;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* the three inks, available as utilities so data can be coloured
+     without a component inventing a hue. §15.2 */
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-hair: var(--hair);
+  --color-hair-2: var(--hair-2);
+  --color-hair-lit: var(--hair-lit);
+  --color-bone: var(--bone);
+  --color-bone-2: var(--bone-2);
+  --color-bone-3: var(--bone-3);
+  --color-pink: var(--pink);
+  --color-pink-lo: var(--pink-lo);
+  --color-yellow: var(--yellow);
+  --color-yellow-lo: var(--yellow-lo);
+  --color-violet: var(--violet);
+  --color-violet-d: var(--violet-d);
+  --color-violet-deep: var(--violet-deep);
+
+  /* trading convention — LONG/SHORT and candlestick up/down only. */
+  --color-up: var(--up);
+  --color-down: var(--down);
+
+  /* every radius collapses to 0. A pill uses rounded-full. */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+
+  /* the spacing scale, as named steps. Using gap-s4 rather than gap-4
+     keeps the scale greppable and the verifier's check 5 answerable. */
+  --spacing-s1: 4px;
+  --spacing-s2: 8px;
+  --spacing-s3: 12px;
+  --spacing-s4: 18px;
+  --spacing-s5: 26px;
+  --spacing-s6: 38px;
+  --spacing-s7: 54px;
+  --spacing-s8: 76px;
+  --spacing-s9: 108px;
+
+  --text-t1: 11px;
+  --text-t2: 12px;
+  --text-t3: 13px;
+  --text-t4: 15px;
+  --text-t5: 17px;
+  --text-d4: 26px;
+  --text-d3: 36px;
+  --text-num: 44px;
+
+  /* referenced from the face variables, never from the semantic token of the
+     same name — see the note in tokens.css */
+  --font-sans: var(--font-hanken), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-martian), ui-monospace, Menlo, monospace;
+  --font-serif: var(--font-newsreader), Georgia, serif;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-strike: cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+/* ------------------------------------------------------------
+   Application chrome.
+
+   LAYERING MATTERS HERE. Unlayered CSS beats every layered rule in the
+   cascade regardless of specificity, so an unlayered `.vx button
+   { background: none }` silently overrode `bg-pink` and every other
+   Tailwind utility. The reset therefore lives in `base` (where preflight
+   would have been) and the component styles in `components`, so utilities
+   still win over both.
+
+   Everything is scoped under .vx so no bare-element rule reaches the
+   landing page.
+   ------------------------------------------------------------ */
+
+@layer base {
+  /* Preflight is not imported, so the user-agent's own form styling still
+     applies: buttons get a light `buttonface` fill and a border, which reads
+     as a pale block on a dark ground. This is the one piece of preflight the
+     application takes back. */
+  .vx button,
+  .vx input,
+  .vx select,
+  .vx textarea {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    margin: 0;
+  }
+  .vx button {
+    cursor: pointer;
+    text-align: inherit;
+  }
+  .vx button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@layer components {
+  .vx {
+    min-height: 100dvh;
+    background: var(--ink);
+    color: var(--bone);
+    font-family: var(--font-ui);
+    font-size: var(--t4);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .vx *,
+  .vx *::before,
+  .vx *::after {
+    box-sizing: border-box;
+  }
+
+  /* Every number, label and address. §2 */
+  .vx .mono,
+  .vx .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .vx .num {
+    font-weight: 500;
+  }
+
+  /* Micro label: uppercase, +0.12em, sits above its value. §9 */
+  .vx .lbl {
+    font-family: var(--font-mono);
+    font-size: var(--t1);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--bone-3);
+  }
+
+  .vx .ink-realized {
+    color: var(--yellow);
+  }
+  .vx .ink-implied {
+    color: var(--pink);
+  }
+
+  /* A plate. Flat fill, hairline, radius 0. Never contains a plate. §5 */
+  .vx .plate {
+    background: var(--panel);
+    border: 1px solid var(--hair);
+  }
+
+  /* A ruled block. The default surface — hairline above, whitespace below. */
+  .vx .ruled {
+    border-top: 1px solid var(--hair);
+  }
+}
+
+.vx :focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------
+   Live-tier motion. §15.3 — transform and opacity only, and the
+   inventory in §15.3 is the complete list of what may move.
+   ------------------------------------------------------------ */
+
+/* A value change lifts the colour and decays. The glyph never moves. */
+@keyframes vx-lift-realized {
+  0% {
+    color: var(--yellow);
+  }
+  100% {
+    color: inherit;
+  }
+}
+@keyframes vx-lift-implied {
+  0% {
+    color: var(--pink);
+  }
+  100% {
+    color: inherit;
+  }
+}
+.vx .is-lifting[data-ink="realized"] {
+  animation: vx-lift-realized 620ms var(--ease-out);
+}
+.vx .is-lifting[data-ink="implied"] {
+  animation: vx-lift-implied 620ms var(--ease-out);
+}
+
+/* Chart draw-in. A transform on a clip rectangle rather than an animated
+   stroke-dashoffset, because §7.2 permits transform and opacity only. */
+@keyframes vx-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.vx .vx-draw {
+  transform-origin: left center;
+  animation: vx-draw 820ms var(--ease-out) both;
+}
+
+/* A pulse means the thing is streaming. On anything static it is a bug,
+   not decoration. §10 trait 35. */
+@keyframes vx-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.vx .vx-pulse,
+.vx .vx-endpoint {
+  animation: vx-pulse 2.2s var(--ease-float) infinite;
+}
+
+/* A tape row arriving. The arrival is the event, so the newest row enters
+   and nothing else moves. */
+@keyframes vx-tape-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.vx .vx-tape-new {
+  animation: vx-tape-in 320ms var(--ease-out) both;
+}
+
+/* Hover is 140ms and only on interactive rows. §10 trait 34. */
+.vx .vx-row .vx-spark path {
+  transition: opacity 140ms var(--ease-out);
+}
+.vx .vx-row:hover .vx-spark path {
+  opacity: 1;
+}
+.vx .vx-row {
+  transition: background-color 140ms var(--ease-out);
+}
+.vx .vx-row:hover {
+  background: var(--ink-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vx *,
+  .vx *::before,
+  .vx *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .vx .vx-draw {
+    animation: none;
+    transform: none;
+  }
+}
