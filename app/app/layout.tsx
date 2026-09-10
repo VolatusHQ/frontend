@@ -4,6 +4,7 @@ import { OnchainProviders } from "./lib/onchain/providers";
 import { MarketProvider } from "./lib/market-context";
 import { EpochLegsProvider, PositionsProvider } from "./lib/positions-context";
 import { LiquidityProvider } from "./lib/liquidity-context";
+import { SponsorshipProvider } from "./lib/sponsorship-context";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { AppShell } from "./components/volatus/AppShell";
 import { getEpochLegs, getLiveMarket } from "./lib/live-market";
@@ -32,11 +33,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <EpochLegsProvider legs={legs}>
           <PositionsProvider>
             <LiquidityProvider>
-              <TooltipProvider delayDuration={120}>
-                <div className="vx">
-                  <AppShell>{children}</AppShell>
-                </div>
-              </TooltipProvider>
+              <SponsorshipProvider>
+                <TooltipProvider delayDuration={120}>
+                  <div className="vx">
+                    <AppShell>{children}</AppShell>
+                  </div>
+                </TooltipProvider>
+              </SponsorshipProvider>
             </LiquidityProvider>
           </PositionsProvider>
         </EpochLegsProvider>
