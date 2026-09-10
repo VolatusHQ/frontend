@@ -75,21 +75,22 @@ export const TICK_SPACING = 60;
 /* ---------- Arc Testnet (5042002) — the premium stream ---------- */
 
 /**
- * Redeployed 2026-09-05, for the same reason the oracle was.
+ * Redeployed 2026-09-08, same reason as the 2026-09-05 redeploy before it: the
+ * previous address, `0x6C35BEC76B7c43DDdbF0b46E3402D1461b4233D9`, has its
+ * `settlementReporter` set to `0xFf54812Fc9EC92E51a22f67a92Cd2c09a049E30c` — a
+ * key that turned out to live only on a teammate's machine, unreachable before
+ * Arc epoch 2's 2026-09-12 report deadline. Redeployed (as `VolatusStream`,
+ * from `VolatusHQ/contracts` — same logic, renamed) with `settlementReporter`
+ * set to a fresh key generated and held for this purpose,
+ * `0x3c400B31e2b3356985796832b81C2212Ad1BdF6D`. Epoch 2 was re-mirrored in the
+ * same deploy run, targeting the same `coverageEnd`/`reportDeadline` window
+ * the original mirror used.
  *
- * `settlementReporter` is `immutable`. On the original stream
- * (`0xD7EeD2a6…C074`) it is `0x364EDC06…5609` — the deployer key nobody holds,
- * the same one that stranded the old oracle's `curator`. So no epoch on that
- * contract could ever be reported: `openEpoch` and `reportPayoff` are both
- * reporter-only, epoch 1 lapsed unreported on 2026-09-04, and every subscriber
- * on it can do nothing but `reclaimUnreported`. It is not recoverable and it is
- * not worth pointing a UI at.
- *
- * The replacement's reporter is `0xFf54812Fc9EC92E51a22f67a92Cd2c09a049E30c`,
- * a key the team holds, and it carries `adjust` — which the old bytecode did
- * not, so the hedger's re-rate path exists for the first time here.
+ * The two prior addresses are dead for the identical structural reason: an
+ * `immutable settlementReporter` nobody who needs to operate the reporter can
+ * sign with. Both are permanently limited to `reclaimUnreported`.
  */
-export const SIGMA_STREAM: Address = "0x6C35BEC76B7c43DDdbF0b46E3402D1461b4233D9";
+export const SIGMA_STREAM: Address = "0xE44b6a47b29b097CE5c20BF17830cfb5df734354";
 
 /**
  * The only epoch mirrored onto Arc today. One place to bump when the reporter
@@ -105,15 +106,18 @@ export const SIGMA_STREAM: Address = "0x6C35BEC76B7c43DDdbF0b46E3402D1461b4233D9
 export const LIVE_EPOCH_ID = 2n;
 
 /**
- * The one real subscriber on `LIVE_EPOCH_ID` today -- the deployer/demo LP,
- * matching `services/hedger/src/config.ts`'s `DEMO_OWNER_ADDRESS`. Not a
- * secret; it is a public address, and reading its subscription needs no
- * wallet connection -- `readSubscription` is a plain view call keyed by any
- * address. This is what makes the demo LP's live coverage state (including a
- * fully lapsed stream) visible to every visitor, not only to whoever happens
- * to connect that exact wallet (HANDOFF.md section Frontend gap).
+ * The one real subscriber on `LIVE_EPOCH_ID` today. Updated 2026-09-10: this
+ * is now the keeper's own wallet, real-subscribed on the redeployed
+ * SIGMA_STREAM above (postCapacity 10 USDC, subscribe rate 55 / notional
+ * 4 USDC, fund 4 USDC -- all three confirmed on Arc; the previous address had
+ * no subscription on the fresh contract). Not a secret; it is a public
+ * address, and reading its subscription needs no wallet connection --
+ * `readSubscription` is a plain view call keyed by any address. This is what
+ * makes the demo LP's live coverage state visible to every visitor, not only
+ * to whoever happens to connect that exact wallet (HANDOFF.md section
+ * Frontend gap).
  */
-export const DEMO_SUBSCRIBER_ADDRESS: Address = "0x7975E591c26e6c6D9B0CFd9A81f6d61A921C080c";
+export const DEMO_SUBSCRIBER_ADDRESS: Address = "0xD717489b5A7CC47dF2a8057ce4658002026FE5de";
 
 /**
  * USDC on Arc as an ERC-20, 6 decimals. Also the native gas asset under an
