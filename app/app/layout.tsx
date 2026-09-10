@@ -22,7 +22,9 @@ export const metadata: Metadata = {
  * styled entirely by globals.css and the two share no components.
  *
  * The market and the epoch's legs are read once here, on the server, and
- * handed to every screen.
+ * handed to every screen. The three domain providers below keep their shape;
+ * what changed is that they read and write the chain instead of holding
+ * invented state.
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const [market, legs] = await Promise.all([getLiveMarket(), getEpochLegs()]);
