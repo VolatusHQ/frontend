@@ -10,13 +10,15 @@ const TABS = [
   { href: "/app/liquidity", label: "Liquidity" },
   { href: "/app/underwrite", label: "Underwrite" },
   { href: "/app/profile", label: "Profile" },
+  { href: "/app/faucet", label: "Faucet" },
 ];
 
-/** Markets and Underwrite read real chain state (`live-market.ts`); Liquidity
- *  and Profile are still local mock data (`liquidity-data.ts`, `portfolio.ts`'s
- *  LP/trading inputs). The footer below names which one the current route is,
- *  rather than one blanket claim that is now wrong for half the app. */
-const LIVE_SECTIONS = ["/app/markets", "/app/underwrite"];
+/** Markets, Underwrite and Faucet read/write real chain state (`live-market.ts`,
+ *  `faucet/page.tsx`'s direct mint calls); Liquidity and Profile are still
+ *  local mock data (`liquidity-data.ts`, `portfolio.ts`'s LP/trading inputs).
+ *  The footer below names which one the current route is, rather than one
+ *  blanket claim that is now wrong for most of the app. */
+const LIVE_SECTIONS = ["/app/markets", "/app/underwrite", "/app/faucet"];
 
 function TabLinks({ isActive }: { isActive: (href: string) => boolean }) {
   return (
