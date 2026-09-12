@@ -45,6 +45,20 @@ export function FaqSection() {
         <Reveal>
           <Faq items={QA} />
         </Reveal>
+        <Reveal delay={80}>
+          <div className="faq-more">
+            <div className="faq-more__text">
+              <span className="faq-more__eyebrow">Still reading</span>
+              <p>
+                Every mechanism above has a full writeup — the accumulator, the payoff maths,
+                the manipulation-cost measurement, every deployed address.
+              </p>
+            </div>
+            <a className="btn btn--ghost" href="/docs">
+              Read the docs <span aria-hidden="true">→</span>
+            </a>
+          </div>
+        </Reveal>
       </div>
     </section>
   );
