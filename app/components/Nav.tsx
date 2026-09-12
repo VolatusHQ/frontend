@@ -22,13 +22,14 @@ export function Nav() {
     <header className={`navbar${scrolled ? " is-scrolled" : ""}`}>
       <div className="navbar__inner">
         <div className="navbar__left">
-          <a className="navbar__brand" href="#top" aria-label={BRAND}>
+          <a className="navbar__brand" href="/#top" aria-label={BRAND}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/art/wordmark.webp" alt={BRAND} />
           </a>
           <nav className="navbar__menu" aria-label="Primary">
-            <a href="#how">How it works</a>
-            <a href="#faq">FAQ</a>
+            <a href="/#how">How it works</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/docs">Docs</a>
           </nav>
         </div>
 
