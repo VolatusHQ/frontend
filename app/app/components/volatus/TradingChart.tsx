@@ -284,7 +284,7 @@ export function TradingChart({ trades, pool }: { trades: Trade[]; pool: Pool }) 
       <div ref={containerRef} className="w-full" style={{ height: 440 }} />
 
       <p className="text-t2 text-bone-3 m-0">
-        Drag to pan, scroll to zoom. Mock data — not a live feed.
+        Drag to pan, scroll to zoom. Candles are VAR-LONG swaps in this epoch's vol pool.
       </p>
     </div>
   );
