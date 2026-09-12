@@ -27,7 +27,7 @@ export function MarketDetail({
   swaps: Trade[];
   severity?: VolSeverity | null;
 }) {
-  const { positions, trades, buy, ready } = usePositions();
+  const { positions, trades, buy, ready, epochPositions, redeem, loadingHistory } = usePositions();
   const position = positions[market.pool.slug];
   const router = useRouter();
   const [status, setStatus] = useState<string | null>(null);
@@ -36,6 +36,24 @@ export function MarketDetail({
   // far) plus whatever's landed since, pushed from the roller over a real
   // WebSocket rather than waiting on `router.refresh()` or the next ISR tick.
   const { trades: liveSwaps } = useLiveMarket(swaps);
+
+  async function onRedeem(epochId: bigint, isLong: boolean, amount: number) {
+    if (!ready) {
+      setFailed(true);
+      setStatus("Connect a wallet first.");
+      return;
+    }
+    setFailed(false);
+    setStatus(`Redeeming epoch ${epochId} ${isLong ? "STORM" : "CALM"}…`);
+    try {
+      await redeem(epochId, isLong, amount);
+      setStatus("Redeemed.");
+      router.refresh();
+    } catch (e) {
+      setFailed(true);
+      setStatus(errorMessage(e));
+    }
+  }
 
   async function onBuy(side: "long" | "short", amount: number) {
     if (!ready) {
@@ -76,7 +94,15 @@ export function MarketDetail({
         </aside>
       </div>
 
-      <PositionsPanel slug={market.pool.slug} market={market} position={position} trades={trades} />
+      <PositionsPanel
+        slug={market.pool.slug}
+        market={market}
+        position={position}
+        trades={trades}
+        epochPositions={epochPositions}
+        onRedeem={onRedeem}
+        loading={loadingHistory}
+      />
     </div>
   );
 }

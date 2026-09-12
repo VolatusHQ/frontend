@@ -1,12 +1,15 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { erc20Abi, parseUnits, type Address } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 import { writeContract } from "wagmi/actions";
 import type { PoolSlug } from "./market-data";
 import { sigmaVaultAbi, poolSwapTestAbi } from "./onchain/abis";
 import { MOCK_USDC, SIGMA_VAULT, SWAP_ROUTER, USDC_DECIMALS } from "./onchain/addresses";
+import { readEpochPositions, type EpochPosition } from "./onchain/epoch-positions";
+import { readWalletTrades } from "./onchain/wallet-trades";
 import { MAX_SQRT_PRICE, MIN_SQRT_PRICE, volPoolKey } from "./onchain/v4";
 import { ensureAllowance, ensureChain, UNICHAIN, waitFor } from "./onchain/writes";
 import { wagmiConfig } from "./onchain/wagmi";
@@ -48,6 +51,20 @@ type Ctx = {
   buy: (slug: PoolSlug, side: Side, usdcAmount: number) => Promise<void>;
   /** Which epoch's legs these are, and where the market stands. */
   ready: boolean;
+  /**
+   * Every epoch's STORM/CALM holdings the wallet still has, current epoch
+   * included — unlike `positions`, this does not go blank the moment the
+   * epoch rolls. A settled epoch's row stays until its `redeem` is called.
+   */
+  epochPositions: EpochPosition[];
+  /** `VolatusVault.redeem` for a settled epoch's leg. No-op until settled. */
+  redeem: (epochId: bigint, isLong: boolean, amount: number) => Promise<void>;
+  /** True while `epochPositions`/`trades` are still being reconstructed from
+   *  chain — both scan several blocks' worth of logs, so this can take a
+   *  few seconds. Without it, an in-flight fetch and a genuinely empty
+   *  result look identical, which is how "no trades" was read as broken
+   *  rather than as loading. */
+  loadingHistory: boolean;
 };
 
 const PositionsContext = createContext<Ctx | null>(null);
@@ -120,6 +137,43 @@ export function PositionsProvider({ children }: { children: React.ReactNode }) {
     if (longSize === 0 && shortSize === 0) return {};
     return { [legs.slug]: { longSize, shortSize } };
   }, [legs, longBalance.data, shortBalance.data]);
+
+  const epochPositionsQuery = useQuery({
+    queryKey: ["epoch-positions", address],
+    queryFn: () => readEpochPositions(address!),
+    enabled: Boolean(address),
+  });
+  const epochPositions = epochPositionsQuery.data ?? [];
+
+  // Reconstructed entirely from the wallet's own on-chain Transfer/Swap
+  // history — no backend, nothing that resets on a restart or a page reload.
+  const tradesQuery = useQuery({
+    queryKey: ["wallet-trades", address],
+    queryFn: () => readWalletTrades(address!),
+    enabled: Boolean(address),
+  });
+  const trades = tradesQuery.data ?? [];
+
+  const redeem = useCallback(
+    async (epochId: bigint, isLong: boolean, amount: number) => {
+      if (!address || amount <= 0) return;
+      await ensureChain(UNICHAIN);
+      const units = parseUnits(amount.toFixed(USDC_DECIMALS), USDC_DECIMALS);
+      const hash = await writeContract(wagmiConfig, {
+        address: SIGMA_VAULT,
+        abi: sigmaVaultAbi,
+        functionName: "redeem",
+        args: [epochId, isLong, units],
+        chainId: UNICHAIN,
+      });
+      await waitFor(hash, UNICHAIN);
+      epochPositionsQuery.refetch();
+      tradesQuery.refetch();
+      longBalance.refetch();
+      shortBalance.refetch();
+    },
+    [address, epochPositionsQuery, tradesQuery, longBalance, shortBalance],
+  );
 
   const buy = useCallback(
     async (slug: PoolSlug, side: Side, usdcAmount: number) => {
@@ -209,15 +263,25 @@ export function PositionsProvider({ children }: { children: React.ReactNode }) {
 
       longBalance.refetch();
       shortBalance.refetch();
+      epochPositionsQuery.refetch();
+      tradesQuery.refetch();
     },
-    [address, legs, longBalance, shortBalance],
+    [address, legs, longBalance, shortBalance, epochPositionsQuery, tradesQuery],
   );
 
+  const loadingHistory = Boolean(address) && (epochPositionsQuery.isLoading || tradesQuery.isLoading);
+
   const value = useMemo(
-    // Trade history comes from the pool's own Swap events and is passed to the
-    // pages that show it; the context no longer keeps a list of its own.
-    () => ({ positions, trades: [] as Trade[], buy, ready: Boolean(address && legs) }),
-    [positions, buy, address, legs],
+    () => ({
+      positions,
+      trades,
+      buy,
+      ready: Boolean(address && legs),
+      epochPositions,
+      redeem,
+      loadingHistory,
+    }),
+    [positions, trades, buy, address, legs, epochPositions, redeem, loadingHistory],
   );
 
   return <PositionsContext.Provider value={value}>{children}</PositionsContext.Provider>;
