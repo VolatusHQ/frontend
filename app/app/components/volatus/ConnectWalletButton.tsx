@@ -1,39 +1,29 @@
 "use client";
 
-import { usePrivy } from "@privy-io/react-auth";
-import { useAccount, useSwitchChain } from "wagmi";
+import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
+import { injected } from "wagmi/connectors";
 import { arcTestnet } from "@/app/app/lib/onchain/chains";
-import { PRIVY_APP_ID } from "@/app/app/lib/onchain/privy-config";
 import { addr } from "@/app/app/lib/format";
 
 const BUTTON_CLASS =
   "px-s3 py-s2 text-t3 font-medium border border-hair-lit text-bone hover:bg-panel-2 transition-colors duration-[140ms] disabled:opacity-40 disabled:cursor-not-allowed";
 
-/** Rendered when `NEXT_PUBLIC_PRIVY_APP_ID` isn't set — see providers.tsx. */
-function Unconfigured() {
-  return (
-    <button type="button" disabled className={BUTTON_CLASS} title="NEXT_PUBLIC_PRIVY_APP_ID is not set">
-      Connect wallet
-    </button>
-  );
-}
-
 /**
- * Sign-in + external-wallet connect in one control, via Privy — the surface
- * README.md names for this and the only one that gets both cases the user
- * asked for (email/social login with an embedded wallet, or an existing
- * wallet like MetaMask) without two separate buttons.
+ * Plain wagmi wallet connect, via `injected()` — whatever EOA browser
+ * extension the user already has (MetaMask, Rabby, Brave Wallet, ...). No
+ * email/social login, and no embedded or smart-contract wallet.
  *
  * The Live actions panel on `/app/markets` is the only place a connected
  * wallet is used to sign anything (WIRING.md § Redeploy scope); everywhere
  * else in the app stays exactly as mock as it was.
  */
-function Connected() {
-  const { authenticated, ready, login, logout, user } = usePrivy();
-  const { address, chain } = useAccount();
+export function ConnectWalletButton() {
+  const { address, chain, status } = useAccount();
+  const { connect, isPending: connecting } = useConnect();
+  const { disconnect } = useDisconnect();
   const { switchChain, isPending: switching } = useSwitchChain();
 
-  if (!ready) {
+  if (status === "connecting" || status === "reconnecting") {
     return (
       <button type="button" disabled className={BUTTON_CLASS}>
         Loading…
@@ -41,15 +31,19 @@ function Connected() {
     );
   }
 
-  if (!authenticated) {
+  if (status !== "connected") {
     return (
-      <button type="button" onClick={login} className={BUTTON_CLASS}>
-        Connect wallet
+      <button
+        type="button"
+        onClick={() => connect({ connector: injected() })}
+        disabled={connecting}
+        className={BUTTON_CLASS}
+      >
+        {connecting ? "Connecting…" : "Connect wallet"}
       </button>
     );
   }
 
-  const label = address ? addr(address) : (user?.email?.address ?? "Connected");
   const wrongChain = chain !== undefined && chain.id !== arcTestnet.id;
 
   return (
@@ -65,13 +59,9 @@ function Connected() {
           {switching ? "Switching…" : "Switch to Arc"}
         </button>
       ) : null}
-      <button type="button" onClick={logout} className={`${BUTTON_CLASS} num`}>
-        {label}
+      <button type="button" onClick={() => disconnect()} className={`${BUTTON_CLASS} num`}>
+        {address ? addr(address) : "Connected"}
       </button>
     </div>
   );
-}
-
-export function ConnectWalletButton() {
-  return PRIVY_APP_ID ? <Connected /> : <Unconfigured />;
 }

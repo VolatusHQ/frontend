@@ -36,7 +36,11 @@ const SWAP_EVENT = parseAbiItem(
  * Bounded by the epoch's own start block, so this is a small scan and a real
  * figure rather than a rolling window the chain cannot answer for.
  */
-async function volumeSinceEpochStart(volPoolId: `0x${string}`, fromBlock: bigint): Promise<number> {
+async function volumeSinceEpochStart(
+  volPoolId: `0x${string}`,
+  fromBlock: bigint,
+  longIsCurrency0: boolean,
+): Promise<number> {
   try {
     const logs = await unichainClient.getLogs({
       address: POOL_MANAGER,
@@ -46,10 +50,10 @@ async function volumeSinceEpochStart(volPoolId: `0x${string}`, fromBlock: bigint
       toBlock: "latest",
     });
 
-    // mUSDC is currency0 in the vol pool; the absolute delta is what changed hands.
+    // mUSDC is whichever currency VAR-LONG isn't; its absolute delta is what changed hands.
     const total = logs.reduce((sum, log) => {
-      const a0 = log.args.amount0 ?? 0n;
-      return sum + (a0 < 0n ? -a0 : a0);
+      const usdc = (longIsCurrency0 ? log.args.amount1 : log.args.amount0) ?? 0n;
+      return sum + (usdc < 0n ? -usdc : usdc);
     }, 0n);
 
     return Number(total) / 10 ** USDC_DECIMALS;
@@ -95,11 +99,11 @@ export async function getVarLongTrades(): Promise<Trade[]> {
     return logs
       .map((log) => {
         const sqrtPriceX96 = log.args.sqrtPriceX96 ?? 0n;
-        const a0 = log.args.amount0 ?? 0n;
+        const usdc = (longIsCurrency0 ? log.args.amount1 : log.args.amount0) ?? 0n;
         return {
           time: times.get(log.blockNumber) ?? 0,
           price: varLongPrice(sqrtPriceX96, longIsCurrency0),
-          volume: Number(a0 < 0n ? -a0 : a0) / 10 ** USDC_DECIMALS,
+          volume: Number(usdc < 0n ? -usdc : usdc) / 10 ** USDC_DECIMALS,
         };
       })
       // A swap that exhausts the vol pool's thin seeded range (no slippage
@@ -138,8 +142,10 @@ export async function getLiveMarket(): Promise<Market | null> {
   const longPrice = m.varLongPriceWad === null ? 0 : wadToRatio(m.varLongPriceWad);
 
   const volumeUsd = m.volPool
-    ? await volumeSinceEpochStart(m.volPool.poolId, m.epoch.startBlock)
+    ? await volumeSinceEpochStart(m.volPool.poolId, m.epoch.startBlock, m.volPool.longIsCurrency0)
     : 0;
+
+  const status = m.status === "live" ? "Active" : m.status === "awaiting-settlement" ? "Frozen" : "Settled";
 
   const history: VolatilityPoint[] = [];
 
@@ -161,6 +167,7 @@ export async function getLiveMarket(): Promise<Market | null> {
       index: Number(m.epoch.id),
       // Unichain is ~1s per block, so blocks remaining is seconds remaining.
       remainingSeconds: Number(m.blocksRemaining),
+      status,
     },
     history,
   };

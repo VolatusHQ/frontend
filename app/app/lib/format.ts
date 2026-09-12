@@ -19,11 +19,10 @@ export function int(n: number): string {
 /** 1284.102 -> "1,284.10" */
 export function dec(n: number, places = 2): string {
   const neg = n < 0;
-  const a = Math.abs(n);
-  const whole = Math.floor(a);
-  const frac = a - whole;
-  const fs = frac.toFixed(places).slice(2);
-  const s = places > 0 ? `${groups(whole.toString())}.${fs}` : groups(whole.toString());
+  // Round the whole number first: rounding only the fraction turned 0.99996
+  // into "0.0000" (the carry into the integer part was dropped).
+  const [whole, fs = ""] = Math.abs(n).toFixed(places).split(".");
+  const s = places > 0 ? `${groups(whole)}.${fs}` : groups(whole);
   return neg ? `-${s}` : s;
 }
 

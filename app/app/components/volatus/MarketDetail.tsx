@@ -56,7 +56,7 @@ export function MarketDetail({
 
   return (
     <div className="px-s5 py-s6 max-w-[1180px] mx-auto w-full flex flex-col gap-s6">
-      <PoolHeader market={market} status="Active" severity={severity} />
+      <PoolHeader market={market} status={market.epoch.status ?? "Active"} severity={severity} />
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)] gap-s6 items-start">
         <div className="min-w-0">

@@ -39,7 +39,12 @@ export function poolDisplay(pool: Pool): string {
 
 export type VolatilityPoint = { t: number; realized: number; implied: number };
 
-export type EpochState = { index: number; remainingSeconds: number };
+export type EpochState = {
+  index: number;
+  remainingSeconds: number;
+  /** Live markets only; mock markets are always shown as Active. */
+  status?: "Active" | "Frozen" | "Settled";
+};
 
 export type Market = {
   pool: Pool;
