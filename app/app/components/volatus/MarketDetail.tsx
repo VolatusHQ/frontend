@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Trade } from "@/app/app/lib/candles";
 import type { Market } from "@/app/app/lib/market-data";
+import type { VolSeverity } from "@/app/app/lib/onchain/severity";
 import { usePositions } from "@/app/app/lib/positions-context";
 import { errorMessage } from "@/app/app/lib/onchain/writes";
 import { PoolHeader } from "./PoolHeader";
@@ -16,7 +17,15 @@ import { PositionsPanel } from "./PositionsPanel";
  * that the figures come from the chain and Buy sends a transaction.
  *
  */
-export function MarketDetail({ market, swaps }: { market: Market; swaps: Trade[] }) {
+export function MarketDetail({
+  market,
+  swaps,
+  severity,
+}: {
+  market: Market;
+  swaps: Trade[];
+  severity?: VolSeverity | null;
+}) {
   const { positions, trades, buy, ready } = usePositions();
   const position = positions[market.pool.slug];
   const router = useRouter();
@@ -47,7 +56,7 @@ export function MarketDetail({ market, swaps }: { market: Market; swaps: Trade[]
 
   return (
     <div className="px-s5 py-s6 max-w-[1180px] mx-auto w-full flex flex-col gap-s6">
-      <PoolHeader market={market} status="Active" />
+      <PoolHeader market={market} status="Active" severity={severity} />
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)] gap-s6 items-start">
         <div className="min-w-0">

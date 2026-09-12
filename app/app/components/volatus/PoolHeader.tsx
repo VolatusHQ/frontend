@@ -3,6 +3,7 @@ import { EpochCountdown } from "./EpochCountdown";
 import { Stat } from "./Stat";
 import { poolDisplay, type Market } from "@/app/app/lib/market-data";
 import { compactUsd, pct, signed } from "@/app/app/lib/format";
+import { formatSeverityLabel, type VolSeverity } from "@/app/app/lib/onchain/severity";
 
 /**
  * Breadcrumb, pool name, market label and a one-line status on top; every
@@ -20,9 +21,14 @@ import { compactUsd, pct, signed } from "@/app/app/lib/format";
 export function PoolHeader({
   market,
   status,
+  severity,
 }: {
   market: Market;
   status: "Active" | "Frozen" | "Settled";
+  /** Undefined (not just null) on purpose: this header is shared with the
+   *  still-mock Liquidity page, which has no real severity to show and
+   *  simply omits the prop rather than passing a fabricated one. */
+  severity?: VolSeverity | null;
 }) {
   const { pool, epoch } = market;
 
@@ -75,6 +81,15 @@ export function PoolHeader({
           label="Time left"
           value={<EpochCountdown initialSeconds={epoch.remainingSeconds} />}
         />
+        {severity !== undefined ? (
+          <Stat
+            layout="value-first"
+            size="hero"
+            label="Reads"
+            ink={severity && (severity.tier === "high" || severity.tier === "extreme") ? "warn" : "neutral"}
+            value={severity ? formatSeverityLabel(severity) : "not enough data yet"}
+          />
+        ) : null}
       </div>
     </header>
   );

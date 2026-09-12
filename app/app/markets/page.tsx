@@ -1,7 +1,8 @@
 import { PageHead } from "../components/volatus/AppShell";
 import { MarketTable } from "../components/volatus/MarketTable";
 import { LiveFeedLinks } from "../components/volatus/LiveFeed";
-import { getLiveMarket } from "../lib/live-market";
+import { getLiveMarket, MEASURED_POOL_ID } from "../lib/live-market";
+import { getVolSeverity } from "../lib/vol-history";
 
 /**
  * Re-read the chain every 15s rather than per request. The accumulator only
@@ -11,7 +12,7 @@ import { getLiveMarket } from "../lib/live-market";
 export const revalidate = 15;
 
 export default async function MarketsPage() {
-  const market = await getLiveMarket();
+  const [market, severity] = await Promise.all([getLiveMarket(), getVolSeverity(MEASURED_POOL_ID)]);
 
   return (
     <div className="px-s5 py-s6 max-w-[1180px] mx-auto w-full flex flex-col gap-s6">
@@ -28,7 +29,7 @@ export default async function MarketsPage() {
           </span>
         </div>
         {market ? (
-          <MarketTable markets={[market]} />
+          <MarketTable markets={[market]} severity={severity} />
         ) : (
           <p className="text-t3 text-bone-2 m-0">
             No epoch is open on the measured pool, so there is nothing to trade.

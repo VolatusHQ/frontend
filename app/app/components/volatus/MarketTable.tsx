@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { poolDisplay, type Market } from "@/app/app/lib/market-data";
 import { compactUsd, pct } from "@/app/app/lib/format";
+import { formatSeverityLabel, type VolSeverity } from "@/app/app/lib/onchain/severity";
 import { Sparkline } from "./Sparkline";
 import { EpochCountdown } from "./EpochCountdown";
 import { UniswapMark } from "./UniswapMark";
@@ -12,13 +13,13 @@ import { UniswapMark } from "./UniswapMark";
  * The Markets board. A ruled table, not three cards in a row (§10 trait 11).
  * Every row navigates to its pool's detail page.
  */
-export function MarketTable({ markets }: { markets: Market[] }) {
+export function MarketTable({ markets, severity }: { markets: Market[]; severity: VolSeverity | null }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse min-w-[720px]">
         <thead>
           <tr>
-            {["pool", "volatility", "liquidity", "activity", "epoch", ""].map((h, i) => (
+            {["pool", "volatility", "reads", "liquidity", "activity", "epoch", ""].map((h, i) => (
               <th
                 key={h || i}
                 scope="col"
@@ -31,7 +32,7 @@ export function MarketTable({ markets }: { markets: Market[] }) {
         </thead>
         <tbody>
           {markets.map((m) => (
-            <Row key={m.pool.slug} market={m} />
+            <Row key={m.pool.slug} market={m} severity={severity} />
           ))}
         </tbody>
       </table>
@@ -39,7 +40,7 @@ export function MarketTable({ markets }: { markets: Market[] }) {
   );
 }
 
-function Row({ market }: { market: Market }) {
+function Row({ market, severity }: { market: Market; severity: VolSeverity | null }) {
   const router = useRouter();
   const href = `/app/markets/${market.pool.slug}`;
 
@@ -69,6 +70,11 @@ function Row({ market }: { market: Market }) {
             implied={market.history.map((p) => p.implied)}
           />
         </div>
+      </td>
+      <td className="text-t3 text-right py-s4">
+        <span className={severity && (severity.tier === "high" || severity.tier === "extreme") ? "text-pink" : "text-bone-2"}>
+          {severity ? formatSeverityLabel(severity) : "not enough data yet"}
+        </span>
       </td>
       <td className="num text-t3 text-right text-bone-2 py-s4">{compactUsd(market.liquidityUsd)}</td>
       <td className="num text-t3 text-right text-bone-2 py-s4">{compactUsd(market.volumeUsd)}</td>
