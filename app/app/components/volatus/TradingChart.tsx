@@ -73,7 +73,7 @@ export function TradingChart({ trades, pool }: { trades: Trade[]; pool: Pool }) 
   const smaSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const candlesRef = useRef<Candle[]>([]);
 
-  const [timeframe, setTimeframe] = useState<Timeframe>("1H");
+  const [timeframe, setTimeframe] = useState<Timeframe>("1m");
   const [chartType, setChartType] = useState<ChartType>("Candles");
   const [showSma, setShowSma] = useState(false);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);

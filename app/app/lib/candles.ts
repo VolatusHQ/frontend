@@ -14,11 +14,18 @@ export type Trade = {
   volume: number; // mUSDC that changed hands
 };
 
-export type Timeframe = "1H" | "4H" | "1D" | "1W";
+export type Timeframe = "1m" | "1H" | "4H" | "1D" | "1W";
 
-export const TIMEFRAMES: Timeframe[] = ["1H", "4H", "1D", "1W"];
+// "1m" first and the default: epochs are demo-length (minutes, not days —
+// see `NEXT_EPOCH_BLOCKS` in `backend/services/roller/src/config.ts`), and
+// `getVarLongTrades()` only ever has this epoch's own trades to show. A
+// 1-hour-or-larger bucket floors an entire epoch's trades into one candle
+// no matter how many there were; 1m is the only bucket size that can show
+// more than one.
+export const TIMEFRAMES: Timeframe[] = ["1m", "1H", "4H", "1D", "1W"];
 
 const TIMEFRAME_SECONDS: Record<Timeframe, number> = {
+  "1m": 60,
   "1H": 3600,
   "4H": 4 * 3600,
   "1D": 24 * 3600,
