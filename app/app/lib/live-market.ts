@@ -102,7 +102,13 @@ export async function getVarLongTrades(): Promise<Trade[]> {
           volume: Number(a0 < 0n ? -a0 : a0) / 10 ** USDC_DECIMALS,
         };
       })
-      .filter((t) => t.time > 0)
+      // A swap that exhausts the vol pool's thin seeded range (no slippage
+      // limit — see demoBot.ts) can leave `sqrtPriceX96` pinned near the
+      // pool's physical min/max, which squares out to a price the chart
+      // library's fixed-point range can't hold (crashes `setData`). That's
+      // an exhausted-liquidity artifact, not a real quote, so it's dropped
+      // here rather than plotted.
+      .filter((t) => t.time > 0 && Number.isFinite(t.price) && t.price > 0 && t.price < 1e9)
       .sort((a, b) => a.time - b.time);
   } catch {
     return [];
