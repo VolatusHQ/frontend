@@ -7,6 +7,7 @@ import type { Market } from "@/app/app/lib/market-data";
 import type { VolSeverity } from "@/app/app/lib/onchain/severity";
 import { usePositions } from "@/app/app/lib/positions-context";
 import { errorMessage } from "@/app/app/lib/onchain/writes";
+import { useLiveMarket } from "@/app/app/lib/live-feed";
 import { PoolHeader } from "./PoolHeader";
 import { TradingChart } from "./TradingChart";
 import { TradePanel } from "./TradePanel";
@@ -31,6 +32,10 @@ export function MarketDetail({
   const router = useRouter();
   const [status, setStatus] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  // The chart's own feed: `swaps` (server-rendered, this epoch's history so
+  // far) plus whatever's landed since, pushed from the roller over a real
+  // WebSocket rather than waiting on `router.refresh()` or the next ISR tick.
+  const { trades: liveSwaps } = useLiveMarket(swaps);
 
   async function onBuy(side: "long" | "short", amount: number) {
     if (!ready) {
@@ -60,7 +65,7 @@ export function MarketDetail({
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)] gap-s6 items-start">
         <div className="min-w-0">
-          <TradingChart trades={swaps} pool={market.pool} />
+          <TradingChart trades={liveSwaps} pool={market.pool} />
         </div>
 
         <aside className="flex flex-col gap-s5 min-w-0 lg:sticky lg:top-s4">

@@ -19,5 +19,10 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ p
   ]);
   if (!market || market.pool.slug !== slug) notFound();
 
-  return <MarketDetail market={market} swaps={trades} severity={severity} />;
+  // Keyed on the epoch index: when a new epoch has opened since this route
+  // was last rendered, `MarketDetail` remounts from scratch instead of
+  // reusing state built against the previous (now-stale) epoch's vol pool —
+  // see `useLiveMarket`'s module doc for why a resync inside the hook isn't
+  // the right fix for that case.
+  return <MarketDetail key={market.epoch.index} market={market} swaps={trades} severity={severity} />;
 }
