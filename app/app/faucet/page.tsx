@@ -5,8 +5,17 @@ import { useAccount, useReadContract, useSwitchChain } from "wagmi";
 import { writeContract } from "wagmi/actions";
 import { PageHead } from "../components/volatus/AppShell";
 import { Block, Stat } from "../components/volatus/Stat";
-import { addr, dec, int } from "../lib/format";
-import { MOCK_USDC, MOCK_WETH, USDC_DECIMALS, WETH_DECIMALS } from "../lib/onchain/addresses";
+import { dec, int } from "../lib/format";
+import {
+  MOCK_USDC,
+  MOCK_WETH,
+  SIGMA_HOOK,
+  SIGMA_ORACLE,
+  SIGMA_VAULT,
+  USDC_DECIMALS,
+  VARIANCE_TOKEN_IMPL,
+  WETH_DECIMALS,
+} from "../lib/onchain/addresses";
 import { mintableErc20Abi } from "../lib/onchain/abis";
 import { unichainSepolia } from "../lib/onchain/chains";
 import { UNICHAIN, waitFor } from "../lib/onchain/writes";
@@ -31,6 +40,37 @@ const PRIMARY =
 
 const USDC_AMOUNT = parseUnits("10000", USDC_DECIMALS);
 const WETH_AMOUNT = parseUnits("10", WETH_DECIMALS);
+
+const CORE_ADDRESSES = [
+  { label: "VolatusOracle", value: SIGMA_ORACLE },
+  { label: "VolatusHook", value: SIGMA_HOOK },
+  { label: "VolatusVault", value: SIGMA_VAULT },
+  { label: "VarianceToken implementation", value: VARIANCE_TOKEN_IMPL, note: "cloned per epoch leg" },
+] as const;
+
+const MOCK_ADDRESSES = [
+  { label: "mWETH (MOCK_WETH)", value: MOCK_WETH },
+  { label: "mUSDC (MOCK_USDC)", value: MOCK_USDC },
+] as const;
+
+function AddressRow({ label, value, note }: { label: string; value: `0x${string}`; note?: string }) {
+  return (
+    <div className="flex flex-wrap items-baseline justify-between gap-x-s4 gap-y-[2px] py-s2 border-t border-hair-2 first:border-t-0">
+      <span className="text-t3 text-bone-2">
+        {label}
+        {note ? <span className="text-t2 text-bone-3"> — {note}</span> : null}
+      </span>
+      <a
+        href={`https://sepolia.uniscan.xyz/address/${value}`}
+        target="_blank"
+        rel="noreferrer"
+        className="num text-t3 text-bone hover:text-pink underline decoration-hair-lit underline-offset-4 transition-colors duration-[140ms]"
+      >
+        {value}
+      </a>
+    </div>
+  );
+}
 
 export default function FaucetPage() {
   const { address, chain } = useAccount();
@@ -139,11 +179,28 @@ export default function FaucetPage() {
         </Block>
       )}
 
+      <Block title="Contract addresses" aside="Unichain Sepolia · chain 1301">
+        <div className="flex flex-col gap-s4">
+          <div>
+            <span className="lbl">Core protocol</span>
+            <div className="flex flex-col">
+              {CORE_ADDRESSES.map((a) => (
+                <AddressRow key={a.value} {...a} />
+              ))}
+            </div>
+          </div>
+          <div>
+            <span className="lbl">Mock test tokens — open faucet, anyone can mint</span>
+            <div className="flex flex-col">
+              {MOCK_ADDRESSES.map((a) => (
+                <AddressRow key={a.value} {...a} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </Block>
+
       <div className="flex flex-col gap-s2 text-t2 text-bone-3">
-        <span>
-          mUSDC <span className="num">{addr(MOCK_USDC)}</span> · mWETH{" "}
-          <span className="num">{addr(MOCK_WETH)}</span>
-        </span>
         <p className="m-0 max-w-[60ch]">
           Need Arc-side USDC too (for subscribing to coverage or posting underwriter capacity)?
           That&apos;s Circle&apos;s real testnet USDC, not ours to mint —{" "}
