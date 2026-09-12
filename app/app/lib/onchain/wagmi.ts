@@ -8,6 +8,7 @@
 import { createConfig, http } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { arcTestnet, unichainSepolia } from "./chains";
+import { unichainTransport } from "./transport";
 
 /**
  * `injected()` is the only connector — it talks to whatever EOA browser
@@ -21,6 +22,6 @@ export const wagmiConfig = createConfig({
   ssr: true,
   transports: {
     [arcTestnet.id]: http(),
-    [unichainSepolia.id]: http(),
+    [unichainSepolia.id]: unichainTransport(),
   },
 });
