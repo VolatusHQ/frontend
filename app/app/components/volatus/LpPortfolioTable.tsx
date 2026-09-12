@@ -6,8 +6,23 @@ import { poolDisplay } from "@/app/app/lib/market-data";
 import { dec, int, pct } from "@/app/app/lib/format";
 import type { LpRow } from "@/app/app/lib/portfolio";
 import { UniswapMark } from "./UniswapMark";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumnHeaders,
+  TableEmpty,
+  TableRow,
+} from "@/app/app/components/ui/table";
 
-const HEADS = ["pool", "position value", "fees earned", "volatility", "protection", "premium"];
+const COLUMNS = [
+  { label: "pool" },
+  { label: "position value" },
+  { label: "fees earned" },
+  { label: "volatility" },
+  { label: "protection" },
+  { label: "premium" },
+] as const;
 
 /**
  * How the wallet's LP capital has performed and what protection has cost —
@@ -16,36 +31,18 @@ const HEADS = ["pool", "position value", "fees earned", "volatility", "protectio
  */
 export function LpPortfolioTable({ rows }: { rows: LpRow[] }) {
   if (rows.length === 0) {
-    return (
-      <div className="ruled pt-s4">
-        <p className="text-t4 text-bone-2 m-0">No liquidity positions.</p>
-      </div>
-    );
+    return <TableEmpty>No liquidity positions.</TableEmpty>;
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse min-w-[860px]">
-        <thead>
-          <tr>
-            {HEADS.map((h, i) => (
-              <th
-                key={h}
-                scope="col"
-                className={`lbl pb-s3 font-medium ${i === 0 ? "text-left" : "text-right"}`}
-              >
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <Row key={r.slug} row={r} />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table className="min-w-[860px]">
+      <TableColumnHeaders columns={COLUMNS} />
+      <TableBody>
+        {rows.map((r) => (
+          <Row key={r.slug} row={r} />
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -55,8 +52,8 @@ function Row({ row }: { row: LpRow }) {
   const isProtected = row.protectedUsd > 0;
 
   return (
-    <tr className="vx-row border-t border-hair-2 cursor-pointer" onClick={() => router.push(href)}>
-      <td className="py-s4 pr-s4">
+    <TableRow onClick={() => router.push(href)}>
+      <TableCell>
         <Link
           href={href}
           onClick={(e) => e.stopPropagation()}
@@ -65,16 +62,20 @@ function Row({ row }: { row: LpRow }) {
           <UniswapMark />
           {poolDisplay(row.pool)}
         </Link>
-      </td>
-      <td className="num text-t4 text-right text-bone py-s4">${int(row.valueUsd)}</td>
-      <td className="num text-t3 text-right text-yellow py-s4">+${int(row.feesUsd)}</td>
-      <td className="py-s4 pl-s4 text-right">
+      </TableCell>
+      <TableCell align="right" className="num text-t4 text-bone">
+        ${int(row.valueUsd)}
+      </TableCell>
+      <TableCell align="right" className="num text-t3 text-yellow">
+        +${int(row.feesUsd)}
+      </TableCell>
+      <TableCell align="right">
         <div className="flex flex-col items-end gap-[2px]">
           <span className="num text-t4 text-pink">{pct(row.impliedVol)}</span>
           <span className="num text-t2 text-yellow">{pct(row.realizedVol)} realized</span>
         </div>
-      </td>
-      <td className="py-s4 pl-s4 text-right">
+      </TableCell>
+      <TableCell align="right">
         {isProtected ? (
           <span className="inline-flex items-center gap-s2 num text-t3 text-bone-2">
             <span aria-hidden="true" className="text-violet">
@@ -85,10 +86,10 @@ function Row({ row }: { row: LpRow }) {
         ) : (
           <span className="lbl text-bone-3">Not protected</span>
         )}
-      </td>
-      <td className="num text-t3 text-right text-bone-2 py-s4">
+      </TableCell>
+      <TableCell align="right" className="num text-t3 text-bone-2">
         {isProtected ? `$${dec(row.premiumPerDayUsd, 2)}/day` : "—"}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }

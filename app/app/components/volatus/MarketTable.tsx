@@ -8,6 +8,22 @@ import { formatSeverityLabel, type VolSeverity } from "@/app/app/lib/onchain/sev
 import { Sparkline } from "./Sparkline";
 import { EpochCountdown } from "./EpochCountdown";
 import { UniswapMark } from "./UniswapMark";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumnHeaders,
+  TableRow,
+} from "@/app/app/components/ui/table";
+
+const COLUMNS = [
+  { label: "pool" },
+  { label: "volatility" },
+  { label: "liquidity" },
+  { label: "activity" },
+  { label: "epoch" },
+  { label: "" },
+] as const;
 
 /**
  * The Markets board. A ruled table, not three cards in a row (§10 trait 11).
@@ -15,28 +31,14 @@ import { UniswapMark } from "./UniswapMark";
  */
 export function MarketTable({ markets, severity }: { markets: Market[]; severity: VolSeverity | null }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse min-w-[720px]">
-        <thead>
-          <tr>
-            {["pool", "volatility", "liquidity", "activity", "epoch", ""].map((h, i) => (
-              <th
-                key={h || i}
-                scope="col"
-                className={`lbl pb-s3 font-medium ${i === 0 ? "text-left" : "text-right"}`}
-              >
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {markets.map((m) => (
-            <Row key={m.pool.slug} market={m} severity={severity} />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table className="min-w-[720px]">
+      <TableColumnHeaders columns={COLUMNS} />
+      <TableBody>
+        {markets.map((m) => (
+          <Row key={m.pool.slug} market={m} severity={severity} />
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -44,12 +46,11 @@ function Row({ market, severity }: { market: Market; severity: VolSeverity | nul
   const router = useRouter();
   const href = `/app/markets/${market.pool.slug}`;
 
+  const hasHistory = market.history.length > 1;
+
   return (
-    <tr
-      className="vx-row border-t border-hair-2 cursor-pointer"
-      onClick={() => router.push(href)}
-    >
-      <td className="py-s4 pr-s4">
+    <TableRow onClick={() => router.push(href)}>
+      <TableCell>
         <Link
           href={href}
           onClick={(e) => e.stopPropagation()}
@@ -58,9 +59,19 @@ function Row({ market, severity }: { market: Market; severity: VolSeverity | nul
           <UniswapMark />
           {poolDisplay(market.pool)}
         </Link>
-      </td>
-      <td className="py-s4 pl-s4 text-right">
+      </TableCell>
+      <TableCell align="right">
         <div className="flex items-center justify-end gap-s4">
+          {/* The sparkline sits ahead of the numbers, never after — it is
+              decorative and may reserve no width at all when a pool has no
+              history yet, but the numbers must stay anchored under the
+              "volatility" header regardless. */}
+          {hasHistory ? (
+            <Sparkline
+              realized={market.history.map((p) => p.realized)}
+              implied={market.history.map((p) => p.implied)}
+            />
+          ) : null}
           <div className="flex flex-col items-end gap-[2px]">
             <span
               className={`num text-t4 ${severity && (severity.tier === "high" || severity.tier === "extreme") ? "text-pink" : "text-bone-2"}`}
@@ -69,21 +80,21 @@ function Row({ market, severity }: { market: Market; severity: VolSeverity | nul
             </span>
             <span className="num text-t2 text-yellow">{pct(market.realizedVol)} realized</span>
           </div>
-          <Sparkline
-            realized={market.history.map((p) => p.realized)}
-            implied={market.history.map((p) => p.implied)}
-          />
         </div>
-      </td>
-      <td className="num text-t3 text-right text-bone-2 py-s4">{compactUsd(market.liquidityUsd)}</td>
-      <td className="num text-t3 text-right text-bone-2 py-s4">{compactUsd(market.volumeUsd)}</td>
-      <td className="py-s4 pl-s4 text-right">
+      </TableCell>
+      <TableCell align="right" className="num text-t3 text-bone-2">
+        {compactUsd(market.liquidityUsd)}
+      </TableCell>
+      <TableCell align="right" className="num text-t3 text-bone-2">
+        {compactUsd(market.volumeUsd)}
+      </TableCell>
+      <TableCell align="right">
         <div className="flex flex-col items-end gap-[2px]">
           <EpochCountdown initialSeconds={market.epoch.remainingSeconds} />
           <span className="lbl">epoch {String(market.epoch.index).padStart(2, "0")}</span>
         </div>
-      </td>
-      <td className="py-s4 pl-s4 text-right">
+      </TableCell>
+      <TableCell align="right">
         <Link
           href={href}
           onClick={(e) => e.stopPropagation()}
@@ -92,7 +103,7 @@ function Row({ market, severity }: { market: Market; severity: VolSeverity | nul
           Trade
           <span aria-hidden="true">→</span>
         </Link>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }

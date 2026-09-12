@@ -7,8 +7,24 @@ import { agoSeconds, dec, usdc } from "@/app/app/lib/format";
 import { cn } from "@/app/app/lib/utils";
 import type { TradeHistoryRow } from "@/app/app/lib/portfolio";
 import { UniswapMark } from "./UniswapMark";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumnHeaders,
+  TableEmpty,
+  TableRow,
+} from "@/app/app/components/ui/table";
 
-const HEADS = ["pool", "side", "amount", "price", "mark", "time", "p/l"];
+const COLUMNS = [
+  { label: "pool" },
+  { label: "side" },
+  { label: "amount" },
+  { label: "price" },
+  { label: "mark" },
+  { label: "time" },
+  { label: "p/l" },
+] as const;
 
 /**
  * Every fill the wallet has made, newest first. No leverage, funding or
@@ -16,36 +32,18 @@ const HEADS = ["pool", "side", "amount", "price", "mark", "time", "p/l"];
  */
 export function TradeHistoryTable({ rows }: { rows: TradeHistoryRow[] }) {
   if (rows.length === 0) {
-    return (
-      <div className="ruled pt-s4">
-        <p className="text-t4 text-bone-2 m-0">No trades yet.</p>
-      </div>
-    );
+    return <TableEmpty>No trades yet.</TableEmpty>;
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse min-w-[820px]">
-        <thead>
-          <tr>
-            {HEADS.map((h, i) => (
-              <th
-                key={h}
-                scope="col"
-                className={`lbl pb-s3 font-medium ${i === 0 ? "text-left" : "text-right"}`}
-              >
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <Row key={r.id} row={r} />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table className="min-w-[820px]">
+      <TableColumnHeaders columns={COLUMNS} />
+      <TableBody>
+        {rows.map((r) => (
+          <Row key={r.id} row={r} />
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -57,8 +55,8 @@ function Row({ row }: { row: TradeHistoryRow }) {
   const plTone = row.pnlToDateUsd < 0 ? "text-down" : "text-up";
 
   return (
-    <tr className="vx-row border-t border-hair-2 cursor-pointer" onClick={() => router.push(href)}>
-      <td className="py-s4 pr-s4">
+    <TableRow onClick={() => router.push(href)}>
+      <TableCell>
         <Link
           href={href}
           onClick={(e) => e.stopPropagation()}
@@ -67,15 +65,25 @@ function Row({ row }: { row: TradeHistoryRow }) {
           <UniswapMark />
           {poolDisplay(row.pool)}
         </Link>
-      </td>
-      <td className={cn("num text-t3 text-right py-s4 font-medium", tone)}>{sideLabel}</td>
-      <td className="num text-t3 text-right text-bone-2 py-s4">${dec(row.usdcAmount, 2)}</td>
-      <td className="num text-t3 text-right text-bone-2 py-s4">${dec(row.price, 2)}</td>
-      <td className="num text-t3 text-right text-bone-2 py-s4">${dec(row.markPrice, 2)}</td>
-      <td className="num text-t3 text-right text-bone-2 py-s4">{agoSeconds(row.timestamp, MOCK_NOW)}</td>
-      <td className={cn("num text-t3 text-right py-s4", plTone)}>
+      </TableCell>
+      <TableCell align="right" className={cn("num text-t3 font-medium", tone)}>
+        {sideLabel}
+      </TableCell>
+      <TableCell align="right" className="num text-t3 text-bone-2">
+        ${dec(row.usdcAmount, 2)}
+      </TableCell>
+      <TableCell align="right" className="num text-t3 text-bone-2">
+        ${dec(row.price, 2)}
+      </TableCell>
+      <TableCell align="right" className="num text-t3 text-bone-2">
+        ${dec(row.markPrice, 2)}
+      </TableCell>
+      <TableCell align="right" className="num text-t3 text-bone-2">
+        {agoSeconds(row.timestamp, MOCK_NOW)}
+      </TableCell>
+      <TableCell align="right" className={cn("num text-t3", plTone)}>
         {row.pnlToDateUsd >= 0 ? "+" : "−"}${usdc(Math.abs(row.pnlToDateUsd))}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }

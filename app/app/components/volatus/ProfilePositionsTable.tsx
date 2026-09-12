@@ -7,8 +7,22 @@ import { dec, int, usdc } from "@/app/app/lib/format";
 import { cn } from "@/app/app/lib/utils";
 import type { OpenTradeRow } from "@/app/app/lib/portfolio";
 import { UniswapMark } from "./UniswapMark";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumnHeaders,
+  TableEmpty,
+  TableRow,
+} from "@/app/app/components/ui/table";
 
-const HEADS = ["pool", "side", "size", "price", "value"];
+const COLUMNS = [
+  { label: "pool" },
+  { label: "side" },
+  { label: "size" },
+  { label: "price" },
+  { label: "value" },
+] as const;
 
 /**
  * Open volatility positions. Not a Markets board — this is where the wallet
@@ -17,36 +31,18 @@ const HEADS = ["pool", "side", "size", "price", "value"];
  */
 export function ProfilePositionsTable({ rows }: { rows: OpenTradeRow[] }) {
   if (rows.length === 0) {
-    return (
-      <div className="ruled pt-s4">
-        <p className="text-t4 text-bone-2 m-0">No open positions. Trade volatility from Markets.</p>
-      </div>
-    );
+    return <TableEmpty>No open positions. Trade volatility from Markets.</TableEmpty>;
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse min-w-[820px]">
-        <thead>
-          <tr>
-            {HEADS.map((h, i) => (
-              <th
-                key={h}
-                scope="col"
-                className={`lbl pb-s3 font-medium ${i === 0 ? "text-left" : "text-right"}`}
-              >
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <Row key={r.slug} row={r} />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table className="min-w-[820px]">
+      <TableColumnHeaders columns={COLUMNS} />
+      <TableBody>
+        {rows.map((r) => (
+          <Row key={r.slug} row={r} />
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -57,8 +53,8 @@ function Row({ row }: { row: OpenTradeRow }) {
   const tone = row.side === "long" ? "text-up" : "text-down";
 
   return (
-    <tr className="vx-row border-t border-hair-2 cursor-pointer" onClick={() => router.push(href)}>
-      <td className="py-s4 pr-s4">
+    <TableRow onClick={() => router.push(href)}>
+      <TableCell>
         <Link
           href={href}
           onClick={(e) => e.stopPropagation()}
@@ -67,11 +63,19 @@ function Row({ row }: { row: OpenTradeRow }) {
           <UniswapMark />
           {poolDisplay(row.pool)}
         </Link>
-      </td>
-      <td className={cn("num text-t3 text-right py-s4 font-medium", tone)}>{sideLabel}</td>
-      <td className="num text-t3 text-right text-bone-2 py-s4">{int(row.size)}</td>
-      <td className="num text-t3 text-right text-bone-2 py-s4">${dec(row.currentPrice, 2)}</td>
-      <td className="num text-t4 text-right text-bone py-s4">${usdc(row.valueUsd)}</td>
-    </tr>
+      </TableCell>
+      <TableCell align="right" className={cn("num text-t3 font-medium", tone)}>
+        {sideLabel}
+      </TableCell>
+      <TableCell align="right" className="num text-t3 text-bone-2">
+        {int(row.size)}
+      </TableCell>
+      <TableCell align="right" className="num text-t3 text-bone-2">
+        ${dec(row.currentPrice, 2)}
+      </TableCell>
+      <TableCell align="right" className="num text-t4 text-bone">
+        ${usdc(row.valueUsd)}
+      </TableCell>
+    </TableRow>
   );
 }

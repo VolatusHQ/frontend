@@ -7,8 +7,15 @@ import { compactUsd, pct } from "@/app/app/lib/format";
 import { useSponsorship } from "@/app/app/lib/sponsorship-context";
 import type { LiveUnderwritePool } from "@/app/app/lib/live-market";
 import { UniswapMark } from "./UniswapMark";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumnHeaders,
+  TableRow,
+} from "@/app/app/components/ui/table";
 
-const COLS = ["pool", "capacity", "volatility", ""];
+const COLUMNS = [{ label: "pool" }, { label: "capacity" }, { label: "volatility" }, { label: "" }] as const;
 
 /**
  * The Underwrite board — pools ranked by where sponsorship could do the most
@@ -18,28 +25,14 @@ const COLS = ["pool", "capacity", "volatility", ""];
  */
 export function UnderwriteTable({ pools }: { pools: LiveUnderwritePool[] }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse min-w-[720px]">
-        <thead>
-          <tr>
-            {COLS.map((h, i) => (
-              <th
-                key={h}
-                scope="col"
-                className={`lbl pb-s3 font-medium ${i === 0 ? "text-left" : "text-right"}`}
-              >
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {pools.map((p) => (
-            <Row key={p.slug} pool={p} />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table className="min-w-[720px]">
+      <TableColumnHeaders columns={COLUMNS} />
+      <TableBody>
+        {pools.map((p) => (
+          <Row key={p.slug} pool={p} />
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -50,11 +43,8 @@ function Row({ pool }: { pool: LiveUnderwritePool }) {
   const sponsoring = Boolean(sponsorships[pool.slug]);
 
   return (
-    <tr
-      className="vx-row border-t border-hair-2 cursor-pointer"
-      onClick={() => router.push(href)}
-    >
-      <td className="py-s4 pr-s4">
+    <TableRow onClick={() => router.push(href)}>
+      <TableCell>
         <div className="flex flex-col gap-[2px]">
           <Link
             href={href}
@@ -66,13 +56,17 @@ function Row({ pool }: { pool: LiveUnderwritePool }) {
           </Link>
           {sponsoring ? <span className="lbl text-pink">Sponsoring</span> : null}
         </div>
-      </td>
+      </TableCell>
 
-      <td className="num text-t3 text-right text-bone-2 py-s4">{compactUsd(pool.capacityUsd)}</td>
+      <TableCell align="right" className="num text-t3 text-bone-2">
+        {compactUsd(pool.capacityUsd)}
+      </TableCell>
 
-      <td className="num text-t3 text-right text-pink py-s4">{pct(pool.impliedVol)}</td>
+      <TableCell align="right" className="num text-t3 text-pink">
+        {pct(pool.impliedVol)}
+      </TableCell>
 
-      <td className="py-s4 pl-s4 text-right">
+      <TableCell align="right">
         <Link
           href={href}
           onClick={(e) => e.stopPropagation()}
@@ -81,7 +75,7 @@ function Row({ pool }: { pool: LiveUnderwritePool }) {
           Underwrite
           <span aria-hidden="true">→</span>
         </Link>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
