@@ -21,7 +21,7 @@ import { arcTestnet } from "./onchain/chains";
 import { positionManagerAbi } from "./onchain/abis";
 import { encodeMint, readOwnedPositions } from "./onchain/positions";
 import { amountsForLiquidity, sqrtPriceAtTick } from "./onchain/v4";
-import { ensureAllowance, ensurePermit2, ARC, UNICHAIN, waitFor } from "./onchain/writes";
+import { ensureAllowance, ensureChain, ensurePermit2, ARC, UNICHAIN, waitFor } from "./onchain/writes";
 import { wagmiConfig } from "./onchain/wagmi";
 
 /**
@@ -127,6 +127,7 @@ export function LiquidityProvider({ children }: { children: React.ReactNode }) {
   const start = useCallback(
     async (_slug: PoolSlug, protectedUsd: number) => {
       if (!address || protectedUsd <= 0) return;
+      await ensureChain(ARC);
       const notional = parseUnits(protectedUsd.toFixed(USDC_DECIMALS), USDC_DECIMALS);
       // A rate the contract can hold: one hundred-thousandth of the notional
       // per second, which is what the seeded demo subscription used.
@@ -173,6 +174,7 @@ export function LiquidityProvider({ children }: { children: React.ReactNode }) {
   const adjust = useCallback(
     async (_slug: PoolSlug, protectedUsd: number) => {
       if (!address || protectedUsd <= 0) return;
+      await ensureChain(ARC);
       const amount = parseUnits(protectedUsd.toFixed(USDC_DECIMALS), USDC_DECIMALS);
       await ensureAllowance({
         token: ARC_USDC,
@@ -197,6 +199,7 @@ export function LiquidityProvider({ children }: { children: React.ReactNode }) {
   /** Cancel the stream. Coverage stops here and unspent premium comes back. */
   const stop = useCallback(async () => {
     if (!address) return;
+    await ensureChain(ARC);
     const hash = await writeContract(wagmiConfig, {
       address: SIGMA_STREAM,
       abi: sigmaStreamAbi,
@@ -212,6 +215,7 @@ export function LiquidityProvider({ children }: { children: React.ReactNode }) {
   const addLiquidity = useCallback(
     async (_slug: PoolSlug, usdcAmount: number) => {
       if (!address || usdcAmount <= 0) return;
+      await ensureChain(UNICHAIN);
 
       // Size the position from the mUSDC the depositor asked to put in.
       const target = parseUnits(usdcAmount.toFixed(USDC_DECIMALS), USDC_DECIMALS);

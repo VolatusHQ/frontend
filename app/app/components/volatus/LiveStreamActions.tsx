@@ -18,6 +18,7 @@ import { arcTestnet } from "@/app/app/lib/onchain/chains";
 import { sigmaStreamAbi } from "@/app/app/lib/onchain/abis";
 import { erc20Abi, hasSufficientAllowance } from "@/app/app/lib/onchain/erc20";
 import { wagmiConfig } from "@/app/app/lib/onchain/wagmi";
+import { ensureChain, ARC } from "@/app/app/lib/onchain/writes";
 import type { Failed, LiveStream } from "@/app/app/lib/onchain/reads";
 
 /**
@@ -116,6 +117,7 @@ function SubscriberCard({ stream, address }: { stream: LiveStream; address: `0x$
   async function run(label: string, action: () => Promise<void>) {
     setTx({ status: "pending", label });
     try {
+      await ensureChain(ARC);
       await action();
       setTx({ status: "idle" });
       refetchAll();
@@ -312,6 +314,7 @@ function UnderwriterCard({ address }: { address: `0x${string}` }) {
   async function run(label: string, action: () => Promise<void>) {
     setTx({ status: "pending", label });
     try {
+      await ensureChain(ARC);
       await action();
       setTx({ status: "idle" });
       refetchAll();

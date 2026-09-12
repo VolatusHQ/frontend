@@ -1,7 +1,7 @@
 "use client";
 
 import { erc20Abi, type Address } from "viem";
-import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { getAccount, readContract, switchChain, waitForTransactionReceipt, writeContract } from "wagmi/actions";
 import { permit2Abi } from "./abis";
 import { PERMIT2 } from "./addresses";
 import { arcTestnet, unichainSepolia } from "./chains";
@@ -24,6 +24,23 @@ export type ChainId = typeof UNICHAIN | typeof ARC;
 /** Wait for the receipt so the next step reads post-confirmation state. */
 export async function waitFor(hash: `0x${string}`, chainId: ChainId) {
   await waitForTransactionReceipt(wagmiConfig, { hash, chainId });
+}
+
+/**
+ * Switch the wallet to `chainId` first if it's pointed somewhere else.
+ *
+ * `writeContract`'s own `chainId` argument picks which chain the request is
+ * *addressed to* — it does not switch the wallet's active network first. A
+ * wallet left on Arc (e.g. after the Live actions panel switched it there)
+ * sends the request anyway, and MetaMask rejects it with a chain-mismatch
+ * error instead of prompting a switch. Every write path needs this before
+ * its first transaction.
+ */
+export async function ensureChain(chainId: ChainId) {
+  const account = getAccount(wagmiConfig);
+  if (account.chainId !== chainId) {
+    await switchChain(wagmiConfig, { chainId });
+  }
 }
 
 /**

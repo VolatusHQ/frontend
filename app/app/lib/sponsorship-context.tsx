@@ -8,7 +8,7 @@ import type { PoolSlug } from "./market-data";
 import { REAL_POOL } from "./live-market";
 import { sigmaStreamAbi } from "./onchain/abis";
 import { ARC_USDC, SIGMA_STREAM, USDC_DECIMALS } from "./onchain/addresses";
-import { ensureAllowance, ARC, waitFor } from "./onchain/writes";
+import { ensureAllowance, ensureChain, ARC, waitFor } from "./onchain/writes";
 import { wagmiConfig } from "./onchain/wagmi";
 
 /**
@@ -98,6 +98,7 @@ export function SponsorshipProvider({ children }: { children: React.ReactNode })
   const post = useCallback(
     async (capitalUsd: number) => {
       if (!address || capitalUsd <= 0) return;
+      await ensureChain(ARC);
       const amount = parseUnits(capitalUsd.toFixed(USDC_DECIMALS), USDC_DECIMALS);
       await ensureAllowance({
         token: ARC_USDC,
@@ -123,6 +124,7 @@ export function SponsorshipProvider({ children }: { children: React.ReactNode })
     if (!address) return;
     const mine = shares.data ?? 0n;
     if (mine === 0n) return;
+    await ensureChain(ARC);
     const hash = await writeContract(wagmiConfig, {
       address: SIGMA_STREAM,
       abi: sigmaStreamAbi,

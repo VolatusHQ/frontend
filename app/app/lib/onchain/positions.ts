@@ -142,6 +142,41 @@ const TRANSFER_EVENT = parseAbiItem(
 );
 
 /**
+ * `sepolia.unichain.org` rejects any `eth_getLogs` spanning more than 10,000
+ * blocks, so a single `fromBlock: "earliest"` scan (block 0 to a chain now
+ * tens of millions of blocks tall) always fails outright — not a rate-limit
+ * fluke, every call. Scanning the *entire* history back to genesis in
+ * 10k-block pages would take thousands of round trips, so this bounds the
+ * lookback instead: recent testnet activity only, same trade-off
+ * `live-market.ts` makes for the same RPC limit. A position minted further
+ * back than this window will not show up.
+ */
+const LOG_CHUNK = 9_500n;
+const MAX_CHUNKS = 20;
+
+async function scanRecentTransfersTo(address: Address, owner: Address) {
+  const latest = await unichainClient.getBlockNumber();
+  const all: Awaited<ReturnType<typeof unichainClient.getLogs<typeof TRANSFER_EVENT>>> = [];
+
+  let to = latest;
+  for (let i = 0; i < MAX_CHUNKS && to > 0n; i++) {
+    const from = to > LOG_CHUNK ? to - LOG_CHUNK : 0n;
+    const logs = await unichainClient.getLogs({
+      address,
+      event: TRANSFER_EVENT,
+      args: { to: owner },
+      fromBlock: from,
+      toBlock: to,
+    });
+    all.push(...logs);
+    if (from === 0n) break;
+    to = from - 1n;
+  }
+
+  return all;
+}
+
+/**
  * Positions in the measured pool held by `owner`.
  *
  * Scans `Transfer(to = owner)` and keeps the ids that still belong to them and
@@ -149,13 +184,7 @@ const TRANSFER_EVENT = parseAbiItem(
  * either way the log that minted it is still in the chain's history.
  */
 export async function readOwnedPositions(owner: Address): Promise<OwnedPosition[]> {
-  const logs = await unichainClient.getLogs({
-    address: POSITION_MANAGER,
-    event: TRANSFER_EVENT,
-    args: { to: owner },
-    fromBlock: "earliest",
-    toBlock: "latest",
-  });
+  const logs = await scanRecentTransfersTo(POSITION_MANAGER, owner);
 
   const ids = [...new Set(logs.map((l) => l.args.id).filter((id): id is bigint => id !== undefined))];
   const measured = poolId(MEASURED_POOL_KEY);

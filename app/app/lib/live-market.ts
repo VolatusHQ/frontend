@@ -31,6 +31,22 @@ const SWAP_EVENT = parseAbiItem(
 );
 
 /**
+ * `sepolia.unichain.org` rejects any `eth_getLogs` spanning more than 10,000
+ * blocks. An epoch is normally a few hundred blocks, but a stalled roller or
+ * a long-idle epoch can leave `fromBlock` far enough behind `latest` to blow
+ * past that cap — the call then throws and the caller's `catch` silently
+ * degrades to `0`/`[]` instead of the real figure. Clamping here keeps the
+ * scan inside the limit instead of losing the data outright.
+ */
+const MAX_LOG_RANGE = 9_500n;
+
+async function boundedFromBlock(fromBlock: bigint): Promise<{ fromBlock: bigint; toBlock: bigint }> {
+  const latest = await unichainClient.getBlockNumber();
+  const floor = latest > MAX_LOG_RANGE ? latest - MAX_LOG_RANGE : 0n;
+  return { fromBlock: fromBlock > floor ? fromBlock : floor, toBlock: latest };
+}
+
+/**
  * mUSDC traded in the variance pool since the epoch opened.
  *
  * Bounded by the epoch's own start block, so this is a small scan and a real
@@ -42,12 +58,12 @@ async function volumeSinceEpochStart(
   longIsCurrency0: boolean,
 ): Promise<number> {
   try {
+    const range = await boundedFromBlock(fromBlock);
     const logs = await unichainClient.getLogs({
       address: POOL_MANAGER,
       event: SWAP_EVENT,
       args: { id: volPoolId },
-      fromBlock,
-      toBlock: "latest",
+      ...range,
     });
 
     // mUSDC is whichever currency VAR-LONG isn't; its absolute delta is what changed hands.
@@ -75,12 +91,12 @@ export async function getVarLongTrades(): Promise<Trade[]> {
   if (!m.ok || !m.epoch || !m.volPool) return [];
 
   try {
+    const range = await boundedFromBlock(m.epoch.startBlock);
     const logs = await unichainClient.getLogs({
       address: POOL_MANAGER,
       event: SWAP_EVENT,
       args: { id: m.volPool.poolId },
-      fromBlock: m.epoch.startBlock,
-      toBlock: "latest",
+      ...range,
     });
     if (logs.length === 0) return [];
 

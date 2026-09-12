@@ -8,7 +8,7 @@ import type { PoolSlug } from "./market-data";
 import { sigmaVaultAbi, poolSwapTestAbi } from "./onchain/abis";
 import { MOCK_USDC, SIGMA_VAULT, SWAP_ROUTER, USDC_DECIMALS } from "./onchain/addresses";
 import { MAX_SQRT_PRICE, MIN_SQRT_PRICE, volPoolKey } from "./onchain/v4";
-import { ensureAllowance, UNICHAIN, waitFor } from "./onchain/writes";
+import { ensureAllowance, ensureChain, UNICHAIN, waitFor } from "./onchain/writes";
 import { wagmiConfig } from "./onchain/wagmi";
 
 /**
@@ -125,6 +125,10 @@ export function PositionsProvider({ children }: { children: React.ReactNode }) {
     async (slug: PoolSlug, side: Side, usdcAmount: number) => {
       if (!address || !legs || usdcAmount <= 0) return;
       const amount = parseUnits(usdcAmount.toFixed(USDC_DECIMALS), USDC_DECIMALS);
+
+      // Both sides trade on Unichain; a wallet left on Arc (from the Live
+      // actions panel) must be switched back before the first write.
+      await ensureChain(UNICHAIN);
 
       if (side === "long") {
         // Buying the leg in the variance pool. This is the trade that moves
