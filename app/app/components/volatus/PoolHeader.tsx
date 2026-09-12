@@ -6,17 +6,11 @@ import { compactUsd, pct, signed } from "@/app/app/lib/format";
 import { formatSeverityLabel, type VolSeverity } from "@/app/app/lib/onchain/severity";
 
 /**
- * Breadcrumb, pool name, market label and a one-line status on top; every
- * headline figure for this market — implied, realized, expected, liquidity,
- * volume, time left — in one full-width row below, at "hero" size. This is
- * the single home for these numbers: there is no second stats strip lower
- * on the page repeating any of them.
- *
- * Stacked rather than split side-by-side with the title: six numbers big
- * enough to read at a glance need more width than half the header has to
- * give while sharing a row with "ETH / USDC" — splitting them squeezed the
- * numbers down or wrapped the row. Stacking gives them the full container
- * width instead.
+ * Breadcrumb, pool name, market label and a one-line status on top; Implied
+ * — the one number worth reading at a glance — at hero size below that,
+ * with realized/expected/liquidity/volume as smaller secondary reads
+ * underneath. This is the single home for these numbers: there is no
+ * second stats strip lower on the page repeating any of them.
  */
 export function PoolHeader({
   market,
@@ -25,9 +19,10 @@ export function PoolHeader({
 }: {
   market: Market;
   status: "Active" | "Frozen" | "Settled";
-  /** Undefined (not just null) on purpose: this header is shared with the
-   *  still-mock Liquidity page, which has no real severity to show and
-   *  simply omits the prop rather than passing a fabricated one. */
+  /** Optional/nullable for the Markets detail page's own two states: `null`
+   *  means the roller has no severity yet (real, honest "not enough data
+   *  yet"); `undefined` falls back to a raw, uninterpreted percentage. The
+   *  page's one call site always passes `null` or a real value today. */
   severity?: VolSeverity | null;
 }) {
   const { pool, epoch } = market;
@@ -58,7 +53,7 @@ export function PoolHeader({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-start gap-x-s6 gap-y-s4">
+      <div className="flex flex-col gap-s4">
         <Stat
           layout="value-first"
           size="hero"
@@ -80,16 +75,18 @@ export function PoolHeader({
           }
           sub={severity ? `${pct(market.impliedVol)} annualized` : undefined}
         />
-        <Stat layout="value-first" size="hero" label="Realized" ink="realized" value={pct(market.realizedVol)} />
-        <Stat layout="value-first" size="hero" label="Expected" ink="implied" value={pct(market.expectedVol)} />
-        <Stat layout="value-first" size="hero" label="Liquidity" value={compactUsd(market.liquidityUsd)} />
-        <Stat layout="value-first" size="hero" label="Volume" value={compactUsd(market.volumeUsd)} />
-        <Stat
-          layout="value-first"
-          size="hero"
-          label="Time left"
-          value={<EpochCountdown initialSeconds={epoch.remainingSeconds} />}
-        />
+
+        {/* Secondary reads: everything a trader might still want, at a
+         *  deliberately smaller size than Implied (§15.2 — importance comes
+         *  from size/position, not colour). Time left is omitted here: the
+         *  status line above already carries it, and repeating a hero-sized
+         *  countdown twice in one header was pure duplication, not clarity. */}
+        <div className="flex flex-wrap gap-x-s6 gap-y-s3">
+          <Stat label="Realized" ink="realized" value={pct(market.realizedVol)} />
+          <Stat label="Expected" ink="implied" value={pct(market.expectedVol)} />
+          <Stat label="Liquidity" value={compactUsd(market.liquidityUsd)} />
+          <Stat label="Volume" value={compactUsd(market.volumeUsd)} />
+        </div>
       </div>
     </header>
   );
