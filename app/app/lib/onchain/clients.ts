@@ -11,9 +11,12 @@ import { arcTestnet, unichainSepolia } from "./chains";
  * eth_call multicall round trip where the RPC supports it.
  */
 
+// Deliberately not NEXT_PUBLIC_: the value is read only on the server, so a
+// keyed provider URL never reaches the browser bundle. Client-side reads fall
+// back to the chain's public RPC.
 export const unichainClient = createPublicClient({
   chain: unichainSepolia,
-  transport: http(undefined, { timeout: 10_000, retryCount: 2 }),
+  transport: http(process.env.UNICHAIN_SEPOLIA_RPC || undefined, { timeout: 10_000, retryCount: 2 }),
   batch: { multicall: true },
 });
 
