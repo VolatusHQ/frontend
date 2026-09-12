@@ -37,19 +37,28 @@ export function unichainTransport(): Transport {
       const toBlock = typeof to === "string" && to.startsWith("0x") ? BigInt(to) : null;
 
       let lastError: unknown = new Error("eth_getLogs: no RPC configured");
-      for (const node of nodes) {
-        try {
-          if (toBlock !== null) {
-            const head = BigInt((await node.request({ method: "eth_blockNumber" })) as string);
-            if (head < toBlock) {
-              lastError = new Error(`RPC head ${head} is behind the requested toBlock ${toBlock}`);
-              continue;
+      // `toBlock` usually comes from the fastest node's head (live-market.ts
+      // reads `latest` first), so every other node can be a block or two
+      // short of it. That is "early", not "down": wait and try again.
+      for (let round = 0; round < 3; round++) {
+        let anyBehind = false;
+        for (const node of nodes) {
+          try {
+            if (toBlock !== null) {
+              const head = BigInt((await node.request({ method: "eth_blockNumber" })) as string);
+              if (head < toBlock) {
+                anyBehind = true;
+                lastError = new Error(`RPC head ${head} is behind the requested toBlock ${toBlock}`);
+                continue;
+              }
             }
+            return await node.request(args as never, options as never);
+          } catch (err) {
+            lastError = err;
           }
-          return await node.request(args as never, options as never);
-        } catch (err) {
-          lastError = err;
         }
+        if (!anyBehind) break;
+        await new Promise((resolve) => setTimeout(resolve, 1_500));
       }
       throw lastError;
     }) as typeof base.request;
