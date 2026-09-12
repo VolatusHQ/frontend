@@ -17,7 +17,7 @@ export default function ProfileLiquidityPage() {
   const { positions } = usePositions();
   const { sponsorships } = useSponsorship();
 
-  const rows = lpRows({ lpPositions, protection });
+  const rows = lpRows({ lpPositions, protection, markets });
   const summary = summarize({ positions, lpPositions, protection, sponsorships, markets });
   const totalLiquidity = rows.reduce((a, r) => a + r.valueUsd, 0);
   const protectedTotal = rows.reduce((a, r) => a + r.protectedUsd, 0);

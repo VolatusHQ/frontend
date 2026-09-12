@@ -156,23 +156,38 @@ export type TradeHistoryRow = {
   timestamp: number;
 };
 
-export function tradeHistoryRows(trades: Trade[]): TradeHistoryRow[] {
-  return trades.map((t) => {
-    const market = MARKETS[t.slug];
-    const markPrice = t.side === "long" ? market.longPrice : market.shortPrice;
-    return {
-      id: t.id,
-      slug: t.slug,
-      pool: market.pool,
-      side: t.side,
-      tokens: t.tokens,
-      price: t.price,
-      usdcAmount: t.usdcAmount,
-      markPrice,
-      pnlToDateUsd: t.tokens * (markPrice - t.price),
-      timestamp: t.timestamp,
-    };
-  });
+/**
+ * `MARKETS` only carries the four mock prototype pools — the real pool
+ * (`REAL_POOL.slug`, "mweth-musdc") isn't in it, same gap `sponsorshipRows`
+ * already documents. `trades` now includes real, chain-derived rows for that
+ * pool (see `wallet-trades.ts`), so a bare `MARKETS[t.slug]` lookup crashes
+ * the moment a real trade exists. `markets` (the live context) is checked
+ * first and is where the real pool actually lives; a trade whose pool is in
+ * neither map is dropped rather than crashing on it.
+ */
+export function tradeHistoryRows(
+  trades: Trade[],
+  markets: Partial<Record<PoolSlug, Market>> = {},
+): TradeHistoryRow[] {
+  return trades
+    .map((t) => {
+      const market = markets[t.slug] ?? MARKETS[t.slug];
+      if (!market) return null;
+      const markPrice = t.side === "long" ? market.longPrice : market.shortPrice;
+      return {
+        id: t.id,
+        slug: t.slug,
+        pool: market.pool,
+        side: t.side,
+        tokens: t.tokens,
+        price: t.price,
+        usdcAmount: t.usdcAmount,
+        markPrice,
+        pnlToDateUsd: t.tokens * (markPrice - t.price),
+        timestamp: t.timestamp,
+      };
+    })
+    .filter((r): r is TradeHistoryRow => r !== null);
 }
 
 /* ---------- liquidity ---------- */
@@ -189,10 +204,19 @@ export type LpRow = {
   premiumPerDayUsd: number;
 };
 
-export function lpRows(input: { lpPositions: LpPositions; protection: Protections }): LpRow[] {
+/** Same `MARKETS[slug]` gap as `tradeHistoryRows` — a real LP position on
+ *  `REAL_POOL.slug` isn't in the mock `MARKETS` map, so `markets` (the live
+ *  context) is checked first. */
+export function lpRows(input: {
+  lpPositions: LpPositions;
+  protection: Protections;
+  markets?: Partial<Record<PoolSlug, Market>>;
+}): LpRow[] {
+  const markets = input.markets ?? {};
   return (Object.values(input.lpPositions).filter(Boolean) as LpPosition[])
     .map((p) => {
-      const market = MARKETS[p.slug];
+      const market = markets[p.slug] ?? MARKETS[p.slug];
+      if (!market) return null;
       const prot = input.protection[p.slug];
       const protectedUsd = prot?.protectedUsd ?? 0;
       return {
@@ -207,6 +231,7 @@ export function lpRows(input: { lpPositions: LpPositions; protection: Protection
         premiumPerDayUsd: (prot?.premiumPerSec ?? 0) * 86_400,
       };
     })
+    .filter((r): r is LpRow => r !== null)
     .sort((a, b) => b.valueUsd - a.valueUsd);
 }
 
@@ -271,16 +296,23 @@ export function buildActivityLedger(input: {
   trades: Trade[];
   protection: Protections;
   sponsorships: Sponsorships;
+  /** The real pool's live market, keyed the same way `MARKETS` is — see
+   *  `tradeHistoryRows`'s doc for why a bare `MARKETS[slug]` lookup isn't
+   *  enough once real trades exist. */
+  markets?: Partial<Record<PoolSlug, Market>>;
 }): ActivityEntry[] {
   const out: ActivityEntry[] = [];
+  const markets = input.markets ?? {};
 
   for (const t of input.trades) {
+    const pool = markets[t.slug]?.pool ?? MARKETS[t.slug]?.pool;
+    if (!pool) continue;
     out.push({
       id: `trade-${t.id}`,
       kind: "trading",
       action: t.side === "long" ? "Bought LONG" : "Bought SHORT",
       slug: t.slug,
-      pool: MARKETS[t.slug].pool,
+      pool,
       amountUsd: -t.usdcAmount,
       timestamp: t.timestamp,
     });
@@ -288,12 +320,16 @@ export function buildActivityLedger(input: {
 
   for (const [slug, prot] of Object.entries(input.protection) as [PoolSlug, ProtectionState | undefined][]) {
     if (!prot) continue;
+    // Same real-pool gap as the trade loop above — a live protection on
+    // REAL_POOL.slug isn't in the mock MARKETS map either.
+    const pool = markets[slug]?.pool ?? MARKETS[slug]?.pool;
+    if (!pool) continue;
     out.push({
       id: `protection-${slug}`,
       kind: "liquidity",
       action: "Protection started",
       slug,
-      pool: MARKETS[slug].pool,
+      pool,
       note: `$${int(prot.protectedUsd)} coverage`,
       timestamp: prot.startedAt,
     });
@@ -334,10 +370,13 @@ export type AttentionItem = {
 export function needsAttention(input: {
   lpPositions: LpPositions;
   protection: Protections;
+  markets?: Partial<Record<PoolSlug, Market>>;
 }): AttentionItem[] {
+  const markets = input.markets ?? {};
   const out: AttentionItem[] = [];
   for (const p of Object.values(input.lpPositions).filter(Boolean) as LpPosition[]) {
-    const market = MARKETS[p.slug];
+    const market = markets[p.slug] ?? MARKETS[p.slug];
+    if (!market) continue;
     const protectedUsd = input.protection[p.slug]?.protectedUsd ?? 0;
     const coverage = coveragePct(protectedUsd, p.valueUsd);
     if (coverage < 0.6 && market.impliedVolChangePp > 0) {

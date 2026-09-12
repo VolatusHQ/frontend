@@ -14,7 +14,7 @@ export default function ProfileTradingPage() {
 
   const rows = openTradeRows({ positions, markets });
   const exposure = rows.reduce((a, r) => a + r.valueUsd, 0);
-  const history = tradeHistoryRows(trades);
+  const history = tradeHistoryRows(trades, markets);
 
   return (
     <>

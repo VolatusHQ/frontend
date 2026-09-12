@@ -20,6 +20,25 @@ export function PerformanceChart({ total, height = 168 }: { total: number; heigh
   const [timeframe, setTimeframe] = useState<Timeframe>("1M");
   const points = buildPortfolioTrail(total, timeframe);
 
+  // `buildPortfolioTrail` returns `[]` whenever there's no positive total to
+  // draw a trail toward — a fresh wallet, or one that just redeemed
+  // everything back to $0. `points[points.length - 1]` would be `undefined`
+  // in that case, and every coordinate derived from it (`y(last)` first)
+  // becomes NaN, which is what SVG attribute NaN warnings further down were.
+  if (points.length === 0) {
+    return (
+      <div className="flex flex-col gap-s3">
+        <span className="lbl">Portfolio performance</span>
+        <div
+          className="flex items-center justify-center text-t3 text-bone-3"
+          style={{ height }}
+        >
+          No portfolio value yet.
+        </div>
+      </div>
+    );
+  }
+
   const W = 600;
   const H = height;
   const padL = 6;

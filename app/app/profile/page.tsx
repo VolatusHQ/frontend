@@ -19,8 +19,8 @@ export default function ProfileOverviewPage() {
   const { sponsorships } = useSponsorship();
 
   const summary = summarize({ positions, lpPositions, protection, sponsorships, markets });
-  const attention = needsAttention({ lpPositions, protection });
-  const ledger = buildActivityLedger({ trades, protection, sponsorships });
+  const attention = needsAttention({ lpPositions, protection, markets });
+  const ledger = buildActivityLedger({ trades, protection, sponsorships, markets });
 
   return (
     <>
