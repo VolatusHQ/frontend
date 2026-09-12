@@ -315,9 +315,9 @@ export function LiveFeedLinks() {
         rel="noreferrer"
         className="text-bone-2 hover:text-bone underline decoration-hair-lit underline-offset-4 transition-colors duration-[140ms]"
       >
-        SigmaOracle on Uniscan →
+        VolatusOracle on Uniscan →
       </a>
-      <span className="num text-bone-3">SigmaStream on Arc {addr(SIGMA_STREAM)}</span>
+      <span className="num text-bone-3">VolatusStream on Arc {addr(SIGMA_STREAM)}</span>
     </div>
   );
 }

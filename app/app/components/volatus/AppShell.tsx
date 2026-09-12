@@ -12,6 +12,12 @@ const TABS = [
   { href: "/app/profile", label: "Profile" },
 ];
 
+/** Markets and Underwrite read real chain state (`live-market.ts`); Liquidity
+ *  and Profile are still local mock data (`liquidity-data.ts`, `portfolio.ts`'s
+ *  LP/trading inputs). The footer below names which one the current route is,
+ *  rather than one blanket claim that is now wrong for half the app. */
+const LIVE_SECTIONS = ["/app/markets", "/app/underwrite"];
+
 function TabLinks({ isActive }: { isActive: (href: string) => boolean }) {
   return (
     <>
@@ -42,6 +48,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // needed (unlike the old IA, where /app/pool needed a carve-out onto the
   // /app "Index" tab).
   const isActive = (href: string) => path.startsWith(href);
+  const isLive = LIVE_SECTIONS.some((href) => path.startsWith(href));
 
   return (
     <>
@@ -72,7 +79,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="flex-1">{children}</main>
 
       <footer className="border-t border-hair px-s5 py-s4 text-t2 text-bone-3">
-        Prototype interface. Pools, prices and positions are local mock data, not live markets.
+        {isLive
+          ? "Testnet. This page reads live chain state on Unichain Sepolia + Arc Testnet, not mock data."
+          : "Testnet. This page is local mock data, not a live market — Markets and Underwrite are live."}
       </footer>
     </>
   );
