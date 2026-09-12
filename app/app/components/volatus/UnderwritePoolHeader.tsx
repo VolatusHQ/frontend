@@ -2,16 +2,20 @@ import { Breadcrumb } from "./AppShell";
 import { Stat } from "./Stat";
 import { poolDisplay } from "@/app/app/lib/market-data";
 import { compactUsd, pct } from "@/app/app/lib/format";
-import type { UnderwritePool } from "@/app/app/lib/underwrite-data";
+import type { LiveUnderwritePool } from "@/app/app/lib/live-market";
 
 /**
  * Breadcrumb, pool name and the sponsor's framing on the left; every
- * headline figure for the sponsorship decision — pool liquidity, protected,
+ * headline figure for the sponsorship decision — capacity posted, protected,
  * unprotected, current volatility, volume — in one row on the right. As with
  * PoolHeader, this is the single home for these numbers: the blocks below do
  * not repeat them as a strip.
+ *
+ * "Protected"/"Unprotected" render "not modeled" when `null` — the
+ * underlying mWETH/mUSDC pool has no real dollar price to split, so there is
+ * no honest number here, not just a zero one. See `live-market.ts`.
  */
-export function UnderwritePoolHeader({ pool }: { pool: UnderwritePool }) {
+export function UnderwritePoolHeader({ pool }: { pool: LiveUnderwritePool }) {
   return (
     <header className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-s5">
       <div className="flex flex-col gap-s3">
@@ -37,21 +41,21 @@ export function UnderwritePoolHeader({ pool }: { pool: UnderwritePool }) {
         <Stat
           layout="value-first"
           size="lg"
-          label="Pool liquidity"
-          value={compactUsd(pool.liquidityUsd)}
+          label="Capacity posted"
+          value={compactUsd(pool.capacityUsd)}
         />
         <Stat
           layout="value-first"
           size="lg"
           label="Protected"
-          value={compactUsd(pool.protectedUsd)}
-          sub={`${pct(pool.protectedShare)} of pool`}
+          value={pool.protectedUsd === null ? "not modeled" : compactUsd(pool.protectedUsd)}
+          sub={pool.protectedShare === null ? undefined : `${pct(pool.protectedShare)} of pool`}
         />
         <Stat
           layout="value-first"
           size="lg"
           label="Unprotected"
-          value={compactUsd(pool.unprotectedUsd)}
+          value={pool.unprotectedUsd === null ? "not modeled" : compactUsd(pool.unprotectedUsd)}
         />
         <Stat
           layout="value-first"

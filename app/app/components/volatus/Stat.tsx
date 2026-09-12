@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { cn } from "@/app/app/lib/utils";
 
-export type Ink = "realized" | "implied" | "neutral" | "up" | "down";
+export type Ink = "realized" | "implied" | "neutral" | "up" | "down" | "warn";
 
 const INK_CLASS: Record<Ink, string> = {
   realized: "text-yellow",
@@ -14,6 +14,12 @@ const INK_CLASS: Record<Ink, string> = {
   // panel and position card — see app.css's --up/--down note.
   up: "text-up",
   down: "text-down",
+  // Semantic state (DESIGN.md §15.2): "borrows pink rather than introducing
+  // red — there is no green in this system." Same colour as `implied` —
+  // this is a role distinction (a value that warrants attention), not a new
+  // hue. Used by the volatility severity tier (High/Extreme); intensity
+  // within it comes from `size`/weight at the call site, not a second colour.
+  warn: "text-pink",
 };
 
 /**

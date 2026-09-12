@@ -26,7 +26,10 @@ import { wagmiConfig } from "./onchain/wagmi";
 export type Sponsorship = {
   slug: PoolSlug;
   capitalUsd: number;
-  startedAt: number;
+  /** When this sponsorship began. `null`, not a fabricated timestamp — there
+   *  is no event scan here to derive it from, so it is genuinely unknown
+   *  rather than "started at the epoch". See `SponsorPanel.tsx`. */
+  startedAt: number | null;
 };
 
 type Ctx = {
@@ -87,7 +90,7 @@ export function SponsorshipProvider({ children }: { children: React.ReactNode })
       [REAL_POOL.slug]: {
         slug: REAL_POOL.slug,
         capitalUsd: Number(capital) / 10 ** USDC_DECIMALS,
-        startedAt: 0,
+        startedAt: null,
       },
     };
   }, [shares.data, totalShares.data, capacityPool.data]);

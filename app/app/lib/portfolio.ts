@@ -23,6 +23,7 @@ import type { Position, Side, Trade } from "./positions-context";
 import type { Market } from "./market-data";
 import type { Sponsorship } from "./sponsorship-context";
 import { estimateLiquiditySupported, UNDERWRITE_POOLS } from "./underwrite-data";
+import { REAL_POOL } from "./live-market";
 import { int, pct } from "./format";
 
 /* ---------- timeframes ---------- */
@@ -221,20 +222,32 @@ export type SponsorshipRow = {
   status: "Active";
 };
 
+/**
+ * `UNDERWRITE_POOLS` only carries the four mock prototype pools — the real
+ * pool (`REAL_POOL.slug`, "mweth-musdc") isn't in it, since its impact
+ * multiple isn't modeled on chain (see `live-market.ts`). A row for it is
+ * built with `pool` from `REAL_POOL` and `impactMultiple`/`supportedUsd` at
+ * `0` rather than crashing on an undefined lookup or fabricating a multiple
+ * that does not exist.
+ */
 export function sponsorshipRows(input: { sponsorships: Sponsorships }): SponsorshipRow[] {
   return (Object.values(input.sponsorships).filter(Boolean) as Sponsorship[])
     .map((s) => {
       const up = UNDERWRITE_POOLS[s.slug];
+      const pool = up?.pool ?? (s.slug === REAL_POOL.slug ? REAL_POOL : null);
+      if (!pool) return null;
+      const impactMultiple = up?.impactMultiple ?? 0;
       return {
         slug: s.slug,
-        pool: up.pool,
+        pool,
         capitalUsd: s.capitalUsd,
-        supportedUsd: estimateLiquiditySupported(s.capitalUsd, up.impactMultiple),
-        impactMultiple: up.impactMultiple,
-        startedAt: s.startedAt,
+        supportedUsd: estimateLiquiditySupported(s.capitalUsd, impactMultiple),
+        impactMultiple,
+        startedAt: s.startedAt ?? 0,
         status: "Active" as const,
       };
     })
+    .filter((r): r is SponsorshipRow => r !== null)
     .sort((a, b) => b.capitalUsd - a.capitalUsd);
 }
 
@@ -288,14 +301,18 @@ export function buildActivityLedger(input: {
 
   for (const [slug, s] of Object.entries(input.sponsorships) as [PoolSlug, Sponsorship | undefined][]) {
     if (!s) continue;
+    // `MARKETS` only carries the four mock prototype pools -- the real pool
+    // (REAL_POOL.slug) isn't in it. See `sponsorshipRows`'s doc above.
+    const pool = MARKETS[slug]?.pool ?? (slug === REAL_POOL.slug ? REAL_POOL : null);
+    if (!pool) continue;
     out.push({
       id: `sponsorship-${slug}`,
       kind: "underwriting",
       action: "Sponsored pool",
       slug,
-      pool: MARKETS[slug].pool,
+      pool,
       amountUsd: -s.capitalUsd,
-      timestamp: s.startedAt,
+      timestamp: s.startedAt ?? 0,
     });
   }
 

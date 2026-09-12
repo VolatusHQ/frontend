@@ -1,24 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { Stat } from "./Stat";
-import { TrendLine } from "./TrendLine";
-import { MOCK_NOW, poolDisplay } from "@/app/app/lib/market-data";
-import { agoSeconds, int } from "@/app/app/lib/format";
+import { poolDisplay } from "@/app/app/lib/market-data";
+import { agoSeconds, compactUsd, int } from "@/app/app/lib/format";
 import { cn } from "@/app/app/lib/utils";
-import {
-  SPONSOR_QUICK_AMOUNTS,
-  buildSupportTrail,
-  estimateLiquiditySupported,
-  type UnderwritePool,
-} from "@/app/app/lib/underwrite-data";
+import { SPONSOR_QUICK_AMOUNTS } from "@/app/app/lib/underwrite-data";
+import type { LiveUnderwritePool } from "@/app/app/lib/live-market";
 import type { Sponsorship } from "@/app/app/lib/sponsorship-context";
 
 /**
  * The right-rail decision surface — the Underwrite analog of TradePanel.
- * Before a commitment it answers one question, "what does my money do here",
- * with the multiple and the liquidity it supports as the largest figures on
- * the page. After a commitment it becomes a monitoring + management view.
- * One pink primary per state; withdraw is a text link.
+ *
+ * The prototype framed this around an "impact multiple" (liquidity
+ * supported per $1 sponsored) that is not modeled on this pool — see
+ * `live-market.ts`. Real numbers exist and are shown instead: your capital
+ * as a share of the live `SigmaStream` capacity pool. One pink primary per
+ * state; withdraw is a text link.
  */
 export function SponsorPanel({
   pool,
@@ -29,7 +27,7 @@ export function SponsorPanel({
   onAdjust,
   onWithdraw,
 }: {
-  pool: UnderwritePool;
+  pool: LiveUnderwritePool;
   sponsorship: Sponsorship | undefined;
   amount: number;
   onAmountChange: (n: number) => void;
@@ -38,6 +36,10 @@ export function SponsorPanel({
   onWithdraw: () => void;
 }) {
   const pair = poolDisplay(pool.pool);
+  // Lazy initializer, not a bare `Date.now()` call during render -- runs
+  // once on mount, which is the React-idiomatic way to capture "now" without
+  // an impure call in the render body itself.
+  const [nowSeconds] = useState(() => Math.floor(Date.now() / 1000));
 
   const amountControl = (
     <div className="flex flex-col gap-s3">
@@ -73,7 +75,9 @@ export function SponsorPanel({
   );
 
   if (!sponsorship) {
-    const supported = estimateLiquiditySupported(amount, pool.impactMultiple);
+    const poolAfter = pool.capacityUsd + Math.max(0, amount);
+    const shareAfter = poolAfter > 0 ? amount / poolAfter : 0;
+
     return (
       <div className="flex flex-col gap-s4">
         <span className="lbl">Sponsor protection</span>
@@ -83,21 +87,15 @@ export function SponsorPanel({
           <Stat
             layout="value-first"
             size="hero"
-            label="Liquidity supported"
-            value={`~$${int(supported)}`}
-          />
-          <Stat
-            layout="value-first"
-            size="lg"
-            label="Liquidity supported per $1 sponsored"
-            value={`${pool.impactMultiple}×`}
+            label="Capacity pool today"
+            value={compactUsd(pool.capacityUsd)}
           />
           <p className="num text-t3 text-bone-2 m-0">
-            ${int(amount)} sponsored → ~${int(supported)} liquidity supported
+            ${int(amount)} sponsored → ~{(shareAfter * 100).toFixed(1)}% of the pool, at today&apos;s size
           </p>
           <div className="flex flex-col gap-s1 text-t3 text-bone-2">
-            <span>→ funds LP protection</span>
-            <span>→ supports ~${int(supported)} liquidity</span>
+            <span>→ mints shares against the pool&apos;s current value</span>
+            <span>→ funds coverage for subscribers streaming premium</span>
             <span>→ helps retain liquidity in {pair}</span>
           </div>
         </div>
@@ -114,11 +112,7 @@ export function SponsorPanel({
     );
   }
 
-  const committedSupported = estimateLiquiditySupported(
-    sponsorship.capitalUsd,
-    pool.impactMultiple,
-  );
-  const trail = buildSupportTrail(pool.slug, committedSupported);
+  const shareOfPool = pool.capacityUsd > 0 ? sponsorship.capitalUsd / pool.capacityUsd : 0;
   const pending = amount > 0 && amount !== sponsorship.capitalUsd;
 
   return (
@@ -137,18 +131,21 @@ export function SponsorPanel({
         <Stat
           layout="value-first"
           size="hero"
-          label="Liquidity supported"
-          value={`~$${int(committedSupported)}`}
+          label="Capital committed"
+          value={`$${int(sponsorship.capitalUsd)}`}
         />
         <div className="flex flex-wrap gap-x-s6 gap-y-s3">
-          <Stat label="Capital committed" value={`$${int(sponsorship.capitalUsd)}`} />
-          <Stat label="Impact" value={`${pool.impactMultiple}×`} />
-          <Stat label="Started" value={agoSeconds(sponsorship.startedAt, MOCK_NOW)} />
+          <Stat label="Share of capacity pool" value={`${(shareOfPool * 100).toFixed(1)}%`} />
+          <Stat label="Capacity pool today" value={compactUsd(pool.capacityUsd)} />
+          <Stat
+            label="Started"
+            value={sponsorship.startedAt === null ? "not tracked" : agoSeconds(sponsorship.startedAt, nowSeconds)}
+          />
         </div>
-        <div className="flex flex-col gap-s1">
-          <TrendLine points={trail} />
-          <span className="text-t2 text-bone-3">Illustrative — since your sponsorship began</span>
-        </div>
+        <p className="text-t2 text-bone-3 m-0">
+          Premium earned while you hold shares accrues to you; withdrawing realizes your pro-rata
+          share of the pool, including any claims paid.
+        </p>
       </div>
 
       <div className="ruled pt-s4 flex flex-col gap-s3">

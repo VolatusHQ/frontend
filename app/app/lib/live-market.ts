@@ -167,10 +167,18 @@ export { MEASURED_POOL_ID };
  * coverage, read from `SigmaStream` on Arc.
  *
  * The prototype's impact multiple, sponsor count and protected/unprotected
- * split are not modelled anywhere on chain, so they are zero here and the
- * columns that showed them were dropped.
+ * split are not modelled anywhere on chain — there is no way to derive them,
+ * not just no value yet, since the underlying mWETH/mUSDC pool is seeded 1:1
+ * in raw mock units and has no real dollar price to split (see
+ * `MarketOverview.tsx`'s "no meaningful dollar price" note). They are `null`
+ * here, not `0`, so the UI can tell "not modeled" from "modeled and zero" —
+ * same convention `getLiveMarket()` uses for `impliedVolChangePp`/`history`.
+ *
+ * `capacityUsd` (what backs coverage, from `SigmaStream.capacityPool`) is a
+ * different concept from "pool liquidity" (the underlying v4 pool's TVL,
+ * which is unpriced for the same reason) — components must not conflate them.
  */
-export async function getLiveUnderwritePool() {
+export async function getLiveUnderwritePool(): Promise<LiveUnderwritePool | null> {
   const [market, stream] = await Promise.all([getLiveMarket(), readStream(LIVE_EPOCH_ID)]);
   if (!market) return null;
 
@@ -179,16 +187,34 @@ export async function getLiveUnderwritePool() {
   return {
     slug: market.pool.slug,
     pool: market.pool,
-    liquidityUsd: capacityUsd,
+    capacityUsd,
     impliedVol: market.impliedVol,
     realizedVol: market.realizedVol,
     volumeUsd: market.volumeUsd,
-    protectedUsd: 0,
-    unprotectedUsd: 0,
-    protectedShare: 0,
-    impactMultiple: 0,
-    suggestedSponsorshipUsd: 0,
-    sponsorCount: 0,
-    opportunity: "Moderate" as const,
+    protectedUsd: null,
+    unprotectedUsd: null,
+    protectedShare: null,
+    impactMultiple: null,
+    suggestedSponsorshipUsd: null,
+    sponsorCount: null,
+    opportunity: null,
   };
+}
+
+export interface LiveUnderwritePool {
+  slug: string;
+  pool: Pool;
+  /** `SigmaStream.capacityPool` — coverage capacity, not the underlying
+   *  pool's TVL. See module doc. */
+  capacityUsd: number;
+  impliedVol: number;
+  realizedVol: number;
+  volumeUsd: number;
+  protectedUsd: number | null;
+  unprotectedUsd: number | null;
+  protectedShare: number | null;
+  impactMultiple: number | null;
+  suggestedSponsorshipUsd: number | null;
+  sponsorCount: number | null;
+  opportunity: string | null;
 }

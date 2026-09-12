@@ -1,54 +1,36 @@
-"use client";
-
 import { Block, Stat } from "./Stat";
-import { compactUsd, int } from "@/app/app/lib/format";
-import {
-  estimateLiquiditySupported,
-  type UnderwritePool,
-} from "@/app/app/lib/underwrite-data";
+import { formatSeverityLabel, type VolSeverity } from "@/app/app/lib/onchain/severity";
 
 /**
- * The §18 read: how strong the case is, why (exposed liquidity), and one
- * illustrative starting point the sponsor can adopt with a click. Framed as
- * an estimate on mock conditions, never as advice.
+ * The case for sponsoring, and why: not the prototype's fabricated
+ * "opportunity" score (that needed `protectedShare`/`impactMultiple`, which
+ * are not modeled on this pool — see `live-market.ts`), but the real signal
+ * a sponsor actually has: where this pool's volatility sits right now,
+ * relative to its own history, and whether the rate a subscriber would pay
+ * is currently priced rich or cheap (`severity.ts` — the same
+ * `spreadWad`/`dataSufficient` read the underwriter service itself uses).
+ *
+ * `severity === null` when the roller's `/vol-history` endpoint isn't
+ * configured or reachable — rendered as an honest "not enough data yet"
+ * state, never a guess. Amount-picking lives in `SponsorPanel` only, so
+ * there is exactly one place on the page to choose a number.
  */
-export function SponsorshipOpportunity({
-  pool,
-  onUseSuggested,
-}: {
-  pool: UnderwritePool;
-  onUseSuggested: () => void;
-}) {
-  const illustrative = estimateLiquiditySupported(
-    pool.suggestedSponsorshipUsd,
-    pool.impactMultiple,
-  );
-
+export function SponsorshipOpportunity({ severity }: { severity: VolSeverity | null }) {
   return (
-    <Block title="Sponsorship opportunity">
+    <Block title="Volatility read">
       <div className="flex flex-col gap-s3">
         <Stat
           size="lg"
-          label="Assessment"
-          value={pool.opportunity}
-          sub={`${compactUsd(pool.unprotectedUsd)} of LP liquidity is currently unprotected.`}
+          ink={severity && (severity.tier === "high" || severity.tier === "extreme") ? "warn" : "neutral"}
+          label="Current volatility"
+          value={severity ? formatSeverityLabel(severity) : "not enough data yet"}
+          sub="relative to this pool's own trailing history, not a fixed scale"
         />
 
-        <div className="ruled pt-s3 flex flex-wrap gap-x-s6 gap-y-s3">
-          <Stat label="Suggested sponsorship" value={`$${int(pool.suggestedSponsorshipUsd)}`} />
-          <Stat label="Illustrative impact" value={`~$${int(illustrative)}`} />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-s3 gap-y-s1">
-          <button
-            type="button"
-            onClick={onUseSuggested}
-            className="text-t3 text-bone-2 hover:text-bone underline underline-offset-2"
-          >
-            Use this amount
-          </button>
-          <span className="text-t2 text-bone-3">Estimates use current mock conditions.</span>
-        </div>
+        <p className="text-t3 text-bone-2 m-0 max-w-[60ch]">
+          Capacity posted here backs coverage for subscribers streaming premium at the
+          market&apos;s implied rate — the higher this reads, the richer that rate is priced.
+        </p>
       </div>
     </Block>
   );

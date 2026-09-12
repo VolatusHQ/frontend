@@ -1,5 +1,5 @@
 import { compactUsd, int, pct } from "@/app/app/lib/format";
-import type { UnderwritePool } from "@/app/app/lib/underwrite-data";
+import type { LiveUnderwritePool } from "@/app/app/lib/live-market";
 
 /**
  * The pool's protected / unprotected split, strictly to scale. The point it
@@ -8,17 +8,39 @@ import type { UnderwritePool } from "@/app/app/lib/underwrite-data";
  * The bar stays honest — a $5,000 sponsorship against a $40M pool is a
  * sliver, so the impact story is carried by the multiple elsewhere, not by
  * a padded segment here. A pending sponsorship shows only as a caption.
+ *
+ * Renders an honest note instead of a bar when `pool.protectedUsd` is
+ * `null` — the underlying pool has no real dollar price to split (see
+ * `live-market.ts`), so a bar here would be a fabricated 0%/100% split.
  */
 export function LiquidityGapBar({
   pool,
   previewCapitalUsd,
   previewSupportedUsd,
 }: {
-  pool: UnderwritePool;
+  pool: LiveUnderwritePool;
   previewCapitalUsd?: number;
   previewSupportedUsd?: number;
 }) {
-  const protectedFrac = pool.liquidityUsd > 0 ? pool.protectedUsd / pool.liquidityUsd : 0;
+  if (pool.protectedUsd === null || pool.unprotectedUsd === null) {
+    return (
+      <div className="flex flex-col gap-s3">
+        <div className="flex items-baseline justify-between gap-s4">
+          <span className="lbl">Capacity posted</span>
+          <span className="num text-t4 text-bone">{compactUsd(pool.capacityUsd)}</span>
+        </div>
+        <p className="text-t3 text-bone-2 m-0">
+          The protected/unprotected split isn&apos;t modeled for this pool — the underlying
+          mWETH/mUSDC pair is mock-priced 1:1 and has no real dollar value to split.
+        </p>
+      </div>
+    );
+  }
+
+  const protectedUsd = pool.protectedUsd;
+  const unprotectedUsd = pool.unprotectedUsd;
+  const liquidityUsd = protectedUsd + unprotectedUsd;
+  const protectedFrac = liquidityUsd > 0 ? protectedUsd / liquidityUsd : 0;
   const showPreview =
     typeof previewCapitalUsd === "number" &&
     previewCapitalUsd > 0 &&
@@ -29,7 +51,7 @@ export function LiquidityGapBar({
     <div className="flex flex-col gap-s3">
       <div className="flex items-baseline justify-between gap-s4">
         <span className="lbl">Total liquidity</span>
-        <span className="num text-t4 text-bone">{compactUsd(pool.liquidityUsd)}</span>
+        <span className="num text-t4 text-bone">{compactUsd(liquidityUsd)}</span>
       </div>
 
       <div
@@ -43,10 +65,10 @@ export function LiquidityGapBar({
 
       <div className="flex flex-wrap justify-between gap-x-s5 gap-y-s1 text-t3 text-bone-2">
         <span>
-          Protected <span className="num text-bone">{compactUsd(pool.protectedUsd)}</span> · {pct(protectedFrac)}
+          Protected <span className="num text-bone">{compactUsd(protectedUsd)}</span> · {pct(protectedFrac)}
         </span>
         <span>
-          Unprotected <span className="num text-bone">{compactUsd(pool.unprotectedUsd)}</span> · {pct(1 - protectedFrac)}
+          Unprotected <span className="num text-bone">{compactUsd(unprotectedUsd)}</span> · {pct(1 - protectedFrac)}
         </span>
       </div>
 
