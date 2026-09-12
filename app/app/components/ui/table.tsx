@@ -8,17 +8,35 @@ import { cn } from "@/app/app/lib/utils";
  * header, a row and a right-aligned numeric column always mean the same
  * thing everywhere. Never restyle these primitives at the call site; if a
  * table looks wrong, fix it here.
+ *
+ * The card frame — rounded corners plus a soft lit-edge gradient border —
+ * is a deliberate, explicit exception to DESIGN.md §5's "radius is 0 or a
+ * circle": product asked to match this exact card treatment for every
+ * table on the site, so it lives once, here, rather than as a one-off.
  */
+
+/** The gradient-bordered, rounded card every table (and its empty state) renders inside. */
+function TableCard({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div className={cn("w-full rounded-[20px] bg-gradient-to-b from-hair-lit via-hair to-transparent p-px", className)}>
+      <div className="rounded-[19px] overflow-hidden bg-gradient-to-b from-panel-2 to-panel">
+        {children}
+      </div>
+    </div>
+  );
+}
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div className="w-full overflow-x-auto">
-      <table
-        data-slot="table"
-        className={cn("w-full border-collapse text-t3", className)}
-        {...props}
-      />
-    </div>
+    <TableCard>
+      <div className="w-full overflow-x-auto px-s5 pt-s4 pb-s2">
+        <table
+          data-slot="table"
+          className={cn("w-full border-collapse text-t3", className)}
+          {...props}
+        />
+      </div>
+    </TableCard>
   );
 }
 
@@ -81,7 +99,7 @@ function TableColumnHeaders({
 }) {
   return (
     <TableHeader>
-      <tr>
+      <tr className="border-b border-hair">
         {columns.map((col, i) => (
           <TableHead key={col.label || i} align={col.align ?? (i === 0 ? "left" : "right")}>
             {col.label}
@@ -110,7 +128,7 @@ function TableCell({
   );
 }
 
-/** The shared empty state — a ruled hairline, one line of copy. Never a table with zero rows. */
+/** The shared empty state — same card frame as a populated table, one line of copy. */
 function TableEmpty({
   children,
   className,
@@ -119,9 +137,9 @@ function TableEmpty({
   className?: string;
 }) {
   return (
-    <div className={cn("ruled pt-s4", className)}>
-      <p className="m-0 text-t4 text-bone-2">{children}</p>
-    </div>
+    <TableCard className={className}>
+      <p className="m-0 px-s5 py-s5 text-t4 text-bone-2">{children}</p>
+    </TableCard>
   );
 }
 
