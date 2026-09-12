@@ -31,8 +31,14 @@ import { wagmiConfig } from "./wagmi";
  * visible: a fixed, un-cloned contract, so unlike the per-epoch leg tokens
  * this needs exactly one bounded scan for the whole lookback window, not one
  * per epoch.
+ *
+ * `eth_getLogs` can't be multicall-batched the way plain reads can — every
+ * epoch in this window costs one real HTTP round trip, not a fraction of a
+ * shared one. At epochs this short (~10 minutes), 5 covers roughly the last
+ * hour, which is the entire realistic demo window; 30 was six times the
+ * request volume for coverage nothing in this project's lifetime has needed.
  */
-const EPOCH_LOOKBACK = 30n;
+const EPOCH_LOOKBACK = 5n;
 const LOG_CHUNK = 9_500n;
 const MAX_CHUNKS = 50;
 

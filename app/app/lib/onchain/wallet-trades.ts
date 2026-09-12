@@ -42,7 +42,12 @@ const SWAP_EVENT = parseAbiItem(
   "event Swap(bytes32 indexed id, address indexed sender, int128 amount0, int128 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick, uint24 fee)",
 );
 
-const EPOCH_LOOKBACK = 30n;
+// `eth_getLogs` can't be multicall-batched — every epoch here costs two real
+// HTTP round trips (buy scan + sell scan), not a fraction of a shared one.
+// 5 epochs covers roughly the last hour at this protocol's ~10-minute
+// epochs, the entire realistic demo window; 30 was six times the request
+// volume, which is what actually overwhelmed the RPC.
+const EPOCH_LOOKBACK = 5n;
 const LOG_CHUNK = 9_500n;
 const MAX_CHUNKS = 50; // a defensive cap, not the expected path — see scanTransfers
 const MAX_TRADES = 50;

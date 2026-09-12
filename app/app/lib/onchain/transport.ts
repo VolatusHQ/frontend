@@ -14,9 +14,9 @@ const PUBLIC_RPCS = [
 
 /**
  * `NEXT_PUBLIC_UNICHAIN_SEPOLIA_RPC` (Alchemy) first for ordinary calls, then
- * the public list; every request tries each node in turn until one answers.
- * NEXT_PUBLIC_ means the URL ships to the browser — restrict the key to this
- * site's origin in the provider's dashboard.
+ * the public list; every request tries each node in turn, once, until one
+ * answers. NEXT_PUBLIC_ means the URL ships to the browser — restrict the key
+ * to this site's origin in the provider's dashboard.
  *
  * Two things this rotation exists for, both observed in production rather
  * than hypothesized:
@@ -35,12 +35,16 @@ const PUBLIC_RPCS = [
  *     pure overhead at best; `eth_getLogs` skips straight to the public list
  *     via a separate node set (`logNodes`) that excludes it entirely.
  *
- * `eth_getLogs` gets one more rule on top: asked for a `toBlock` past its own
- * head, a node returns an empty list for the whole range rather than an
- * error, and providers' heads differ by a few blocks — so a block number read
- * from the fastest node and logs read from a slower one would silently lose
- * events. A log query is only sent to a node that has reached its `toBlock`;
- * otherwise it waits and tries again rather than returning a false empty.
+ * Deliberately one pass, not a retry loop: an earlier version re-checked
+ * `eth_blockNumber` on every node before every `eth_getLogs` attempt, across
+ * up to three rounds, to protect against a lagging provider returning a false
+ * empty result. That protection cost more than it was worth — it turned one
+ * logical log query into as many as a dozen real HTTP requests, which is what
+ * actually overwhelmed the RPC in production (a page load fans out into
+ * several such queries at once). A node a block or two behind now just
+ * answers with what it has; every scan in this codebase is a bounded,
+ * best-effort window already; losing the last block or two of it on an
+ * unlucky node is a far cheaper failure mode than a request storm.
  */
 export function unichainTransport(): Transport {
   const primary = process.env.NEXT_PUBLIC_UNICHAIN_SEPOLIA_RPC;
@@ -53,8 +57,7 @@ export function unichainTransport(): Transport {
   const ordinarySingles = ordinaryUrls.map((u) => http(u, { timeout: 10_000, retryCount: 0 }));
   const logSingles = logUrls.map((u) => http(u, { timeout: 10_000, retryCount: 0 }));
   // Only used for its well-formed Transport shape (key/name/type/etc.) —
-  // `request` below is what actually decides which node set and rotation
-  // rule a call gets, for every method, not only `eth_getLogs`.
+  // `request` below is what actually decides which node set a call gets.
   const ordinaryFallback = fallback(ordinarySingles, { retryCount: 1 });
 
   return (params) => {
@@ -63,35 +66,15 @@ export function unichainTransport(): Transport {
     const logNodes = (logSingles.length > 0 ? logSingles : ordinarySingles).map((t) => t(params));
 
     const request = (async (args: { method: string; params?: unknown }, options?: unknown) => {
-      const isGetLogs = args.method === "eth_getLogs";
-      const nodes = isGetLogs ? logNodes : ordinaryNodes;
-
-      const to = isGetLogs ? (args.params as [{ toBlock?: unknown }] | undefined)?.[0]?.toBlock : undefined;
-      const toBlock = typeof to === "string" && to.startsWith("0x") ? BigInt(to) : null;
+      const nodes = args.method === "eth_getLogs" ? logNodes : ordinaryNodes;
 
       let lastError: unknown = new Error(`${args.method}: no RPC configured`);
-      // Only `eth_getLogs` needs the head-catch-up dance; every other method
-      // is a single pass through the node list.
-      const rounds = isGetLogs ? 3 : 1;
-      for (let round = 0; round < rounds; round++) {
-        let anyBehind = false;
-        for (const node of nodes) {
-          try {
-            if (toBlock !== null) {
-              const head = BigInt((await node.request({ method: "eth_blockNumber" })) as string);
-              if (head < toBlock) {
-                anyBehind = true;
-                lastError = new Error(`RPC head ${head} is behind the requested toBlock ${toBlock}`);
-                continue;
-              }
-            }
-            return await node.request(args as never, options as never);
-          } catch (err) {
-            lastError = err;
-          }
+      for (const node of nodes) {
+        try {
+          return await node.request(args as never, options as never);
+        } catch (err) {
+          lastError = err;
         }
-        if (!anyBehind) break;
-        await new Promise((resolve) => setTimeout(resolve, 1_500));
       }
       throw lastError;
     }) as typeof base.request;
