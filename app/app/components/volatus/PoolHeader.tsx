@@ -63,13 +63,22 @@ export function PoolHeader({
           layout="value-first"
           size="hero"
           label="Implied"
-          ink="implied"
+          ink={severity && (severity.tier === "high" || severity.tier === "extreme") ? "warn" : "implied"}
           value={
-            <>
-              {pct(market.impliedVol)}{" "}
-              <span className="text-t3 text-bone-2">{signed(market.impliedVolChangePp)}%</span>
-            </>
+            severity !== undefined ? (
+              severity ? (
+                formatSeverityLabel(severity)
+              ) : (
+                "not enough data yet"
+              )
+            ) : (
+              <>
+                {pct(market.impliedVol)}{" "}
+                <span className="text-t3 text-bone-2">{signed(market.impliedVolChangePp)}%</span>
+              </>
+            )
           }
+          sub={severity ? `${pct(market.impliedVol)} annualized` : undefined}
         />
         <Stat layout="value-first" size="hero" label="Realized" ink="realized" value={pct(market.realizedVol)} />
         <Stat layout="value-first" size="hero" label="Expected" ink="implied" value={pct(market.expectedVol)} />
@@ -81,15 +90,6 @@ export function PoolHeader({
           label="Time left"
           value={<EpochCountdown initialSeconds={epoch.remainingSeconds} />}
         />
-        {severity !== undefined ? (
-          <Stat
-            layout="value-first"
-            size="hero"
-            label="Reads"
-            ink={severity && (severity.tier === "high" || severity.tier === "extreme") ? "warn" : "neutral"}
-            value={severity ? formatSeverityLabel(severity) : "not enough data yet"}
-          />
-        ) : null}
       </div>
     </header>
   );

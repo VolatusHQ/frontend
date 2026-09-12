@@ -19,7 +19,7 @@ export function MarketTable({ markets, severity }: { markets: Market[]; severity
       <table className="w-full border-collapse min-w-[720px]">
         <thead>
           <tr>
-            {["pool", "volatility", "reads", "liquidity", "activity", "epoch", ""].map((h, i) => (
+            {["pool", "volatility", "liquidity", "activity", "epoch", ""].map((h, i) => (
               <th
                 key={h || i}
                 scope="col"
@@ -62,7 +62,11 @@ function Row({ market, severity }: { market: Market; severity: VolSeverity | nul
       <td className="py-s4 pl-s4 text-right">
         <div className="flex items-center justify-end gap-s4">
           <div className="flex flex-col items-end gap-[2px]">
-            <span className="num text-t4 text-pink">{pct(market.impliedVol)}</span>
+            <span
+              className={`num text-t4 ${severity && (severity.tier === "high" || severity.tier === "extreme") ? "text-pink" : "text-bone-2"}`}
+            >
+              {severity ? formatSeverityLabel(severity) : "not enough data yet"}
+            </span>
             <span className="num text-t2 text-yellow">{pct(market.realizedVol)} realized</span>
           </div>
           <Sparkline
@@ -70,11 +74,6 @@ function Row({ market, severity }: { market: Market; severity: VolSeverity | nul
             implied={market.history.map((p) => p.implied)}
           />
         </div>
-      </td>
-      <td className="text-t3 text-right py-s4">
-        <span className={severity && (severity.tier === "high" || severity.tier === "extreme") ? "text-pink" : "text-bone-2"}>
-          {severity ? formatSeverityLabel(severity) : "not enough data yet"}
-        </span>
       </td>
       <td className="num text-t3 text-right text-bone-2 py-s4">{compactUsd(market.liquidityUsd)}</td>
       <td className="num text-t3 text-right text-bone-2 py-s4">{compactUsd(market.volumeUsd)}</td>
