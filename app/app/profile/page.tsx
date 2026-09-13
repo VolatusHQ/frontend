@@ -6,9 +6,8 @@ import { useMarket } from "../lib/market-context";
 import { useLiquidity } from "../lib/liquidity-context";
 import { useSponsorship } from "../lib/sponsorship-context";
 import { buildActivityLedger, needsAttention, summarize } from "../lib/portfolio";
-import { Block, Plate } from "../components/volatus/Stat";
+import { Block } from "../components/volatus/Stat";
 import { PortfolioSummary } from "../components/volatus/PortfolioSummary";
-import { PerformanceChart } from "../components/volatus/PerformanceChart";
 import { NeedsAttention } from "../components/volatus/NeedsAttention";
 import { ActivityFeed } from "../components/volatus/ActivityFeed";
 
@@ -25,10 +24,6 @@ export default function ProfileOverviewPage() {
   return (
     <>
       <PortfolioSummary summary={summary} />
-
-      <Plate className="p-s4">
-        <PerformanceChart total={summary.portfolioValueUsd} />
-      </Plate>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-s6 items-start">
         <NeedsAttention items={attention} />

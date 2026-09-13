@@ -2,13 +2,10 @@
  * Profile aggregation. Every figure the Profile experience shows is derived
  * here, live, from the three domain contexts (`usePositions`,
  * `useLiquidity`, `useSponsorship`) and the existing `*-data.ts` modules —
- * there is no Profile seed data. Functions take the context values as
- * arguments (the same shape as `liquidity-data.ts`'s pure derivations), so a
- * real indexer replaces the contexts without touching this file.
- *
- * The one generated series here — `buildPortfolioTrail` — is deterministic
- * decoration around a live endpoint: its last point is always the real
- * current total. Same technique as `market-data.ts` `buildHistory`.
+ * there is no Profile seed data, and nothing here is fabricated. Functions
+ * take the context values as arguments (the same shape as
+ * `liquidity-data.ts`'s pure derivations), so a real indexer replaces the
+ * contexts without touching this file.
  */
 
 import {
@@ -25,11 +22,6 @@ import type { Sponsorship } from "./sponsorship-context";
 import { estimateLiquiditySupported, UNDERWRITE_POOLS } from "./underwrite-data";
 import { REAL_POOL } from "./live-market";
 import { int, pct } from "./format";
-
-/* ---------- timeframes ---------- */
-
-export type Timeframe = "1D" | "1W" | "1M" | "3M" | "ALL";
-export const TIMEFRAMES: Timeframe[] = ["1D", "1W", "1M", "3M", "ALL"];
 
 /* ---------- portfolio summary ---------- */
 
@@ -397,72 +389,3 @@ export function needsAttention(input: {
   return out;
 }
 
-/* ---------- performance trail ---------- */
-
-/* Deterministic PRNG + string-keyed seed, re-declared per lib per the
-   codebase convention (see market-data.ts, underwrite-data.ts) so this file
-   carries its own "no Math.random / no Date.now" contract. */
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function hashSeed(key: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < key.length; i++) {
-    h ^= key.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
-const TRAIL_POINTS: Record<Timeframe, number> = { "1D": 26, "1W": 28, "1M": 30, "3M": 46, ALL: 60 };
-const TRAIL_START: Record<Timeframe, number> = { "1D": 0.991, "1W": 0.972, "1M": 0.936, "3M": 0.86, ALL: 0.61 };
-const TRAIL_NOISE: Record<Timeframe, number> = { "1D": 0.0016, "1W": 0.004, "1M": 0.006, "3M": 0.009, ALL: 0.013 };
-
-/**
- * A backward-looking portfolio-value walk for the Overview chart. The last
- * point is pinned to `endValueUsd` (the live total), so the chart endpoint
- * and the headline figure always agree. Shorter timeframes start closer to
- * the end and move less — the effect is a zoom, not a different history.
- */
-export function buildPortfolioTrail(endValueUsd: number, timeframe: Timeframe): number[] {
-  const points = TRAIL_POINTS[timeframe];
-  if (points < 2 || !Number.isFinite(endValueUsd) || endValueUsd <= 0) return [];
-  const rand = mulberry32(hashSeed(`portfolio:${timeframe}:${Math.round(endValueUsd)}`));
-  let v = endValueUsd * (TRAIL_START[timeframe] + rand() * 0.006);
-  const noise = endValueUsd * TRAIL_NOISE[timeframe];
-  const out: number[] = [];
-  for (let t = 0; t < points; t++) {
-    const pull = t / (points - 1);
-    v += (endValueUsd - v) * (0.045 + pull * 0.05) + (rand() - 0.5) * noise;
-    v = Math.max(endValueUsd * 0.4, v);
-    out.push(v);
-  }
-  out[out.length - 1] = endValueUsd;
-  return out;
-}
-
-/**
- * A cumulative-P&L walk for the subordinate Trading chart. Unlike the
- * portfolio trail it may cross zero, so nothing is floored.
- */
-export function buildPnlTrail(endValueUsd: number, points = 40): number[] {
-  if (points < 2 || !Number.isFinite(endValueUsd)) return [];
-  const rand = mulberry32(hashSeed(`pnl:${points}:${Math.round(endValueUsd)}`));
-  const amp = Math.max(Math.abs(endValueUsd), 40);
-  let v = endValueUsd * 0.15 + (rand() - 0.5) * amp * 0.2;
-  const out: number[] = [];
-  for (let t = 0; t < points; t++) {
-    const pull = t / (points - 1);
-    v += (endValueUsd - v) * (0.05 + pull * 0.06) + (rand() - 0.5) * amp * 0.05;
-    out.push(v);
-  }
-  out[out.length - 1] = endValueUsd;
-  return out;
-}
