@@ -170,22 +170,38 @@
   /* Preflight is not imported, so the user-agent's own form styling still
      applies: buttons get a light `buttonface` fill and a border, which reads
      as a pale block on a dark ground. This is the one piece of preflight the
-     application takes back. */
+     application takes back.
+
+     Radix's Dialog (and other portaled primitives) render their content into
+     a portal attached near `document.body` by default — outside `.vx`
+     entirely, since `.vx` is only applied once, around the app shell in
+     `layout.tsx`. A `.vx button` selector alone never reaches a button inside
+     any dialog, which is why a plain text-style Cancel button showed the
+     browser's own light, boxy chrome instead of this reset. `data-slot`
+     survives the portal (Radix sets it on the rendered element itself, not
+     something `.vx` needs to be an ancestor of), so dialog content is reset
+     the same way via that instead. */
   .vx button,
   .vx input,
   .vx select,
-  .vx textarea {
+  .vx textarea,
+  [data-slot="dialog-content"] button,
+  [data-slot="dialog-content"] input,
+  [data-slot="dialog-content"] select,
+  [data-slot="dialog-content"] textarea {
     font: inherit;
     color: inherit;
     background: none;
     border: 0;
     margin: 0;
   }
-  .vx button {
+  .vx button,
+  [data-slot="dialog-content"] button {
     cursor: pointer;
     text-align: inherit;
   }
-  .vx button:disabled {
+  .vx button:disabled,
+  [data-slot="dialog-content"] button:disabled {
     cursor: not-allowed;
   }
 }
