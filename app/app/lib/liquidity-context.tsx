@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo } from "react";
+import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { parseUnits } from "viem";
 import { useAccount, useReadContract } from "wagmi";
@@ -65,13 +66,26 @@ export function useLiquidity(): Ctx {
   return ctx;
 }
 
+/** `readOwnedPositions` is an `eth_getLogs` scan — real HTTP round trips that
+ *  can't be multicall-batched, unlike the plain reads below it. `useLiquidity()`
+ *  is only ever consumed from `/app/liquidity` and `/app/profile*` (see their
+ *  imports), but this provider sits above the whole `/app` layout, so without
+ *  a route check it fired on every page — Markets included, which is what
+ *  actually produced the request flood: a wallet with no LP history walks
+ *  every one of MAX_CHUNKS with nothing to show for it, unconditionally, on
+ *  a page that never renders anything built from the result. */
+function needsLpScan(pathname: string): boolean {
+  return pathname.startsWith("/app/liquidity") || pathname.startsWith("/app/profile");
+}
+
 export function LiquidityProvider({ children }: { children: React.ReactNode }) {
   const { address } = useAccount();
+  const pathname = usePathname();
 
   const { data: owned, refetch: refetchOwned } = useQuery({
     queryKey: ["lp-positions", address],
     queryFn: () => readOwnedPositions(address!),
-    enabled: Boolean(address),
+    enabled: Boolean(address) && needsLpScan(pathname),
   });
 
   const subscription = useReadContract({

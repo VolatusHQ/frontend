@@ -150,9 +150,17 @@ const TRANSFER_EVENT = parseAbiItem(
  * lookback instead: recent testnet activity only, same trade-off
  * `live-market.ts` makes for the same RPC limit. A position minted further
  * back than this window will not show up.
+ *
+ * `eth_getLogs` can't be multicall-batched, so each chunk is a real HTTP
+ * round trip with no early exit for a wallet that never LPed — every one of
+ * MAX_CHUNKS runs regardless. 20 chunks (up to 190,000 blocks) was one of
+ * three compounding multipliers behind a production request flood; 5 (up to
+ * ~47,500 blocks, ~13 hours at this chain's ~1s blocks) covers the entire
+ * realistic demo window at a fraction of the request cost. `liquidity-context.tsx`
+ * additionally only runs this query on the routes that use its result at all.
  */
 const LOG_CHUNK = 9_500n;
-const MAX_CHUNKS = 20;
+const MAX_CHUNKS = 5;
 
 async function scanRecentTransfersTo(address: Address, owner: Address) {
   const latest = await unichainClient.getBlockNumber();
