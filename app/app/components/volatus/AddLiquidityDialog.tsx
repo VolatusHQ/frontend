@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from "../ui/dialog";
 import { int } from "@/app/app/lib/format";
+import { useAmountInput } from "@/app/app/lib/useAmountInput";
 
 /**
  * A secondary flow — adding to the position, not protecting it. Kept
@@ -22,12 +23,29 @@ import { int } from "@/app/app/lib/format";
  * Uniswap v4 position mint) and a no-op everywhere else. This component has
  * no way to tell which it's wired to, so it never claims either way.
  */
-export function AddLiquidityDialog({ onAdd }: { onAdd: (usdcAmount: number) => void }) {
+export function AddLiquidityDialog({ onAdd }: { onAdd: (usdcAmount: number) => Promise<void> | void }) {
   const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState(10_000);
+  const [submitting, setSubmitting] = useState(false);
+  const { raw, setRaw, amount } = useAmountInput(10_000);
+
+  // `onAdd` runs a real multi-transaction chain (Permit2 approvals, then the
+  // mint) against a live wallet. Without a guard here, a second click before
+  // the first chain's approvals land re-reads the same starting nonce and
+  // sends an overlapping approve — the wallet accepts both, one confirms,
+  // and the other comes back "nonce too low" against an already-mined nonce.
+  async function submit() {
+    if (submitting || amount <= 0) return;
+    setSubmitting(true);
+    try {
+      await onAdd(amount);
+      setOpen(false);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(next) => !submitting && setOpen(next)}>
       <DialogTrigger asChild>
         <button
           type="button"
@@ -36,7 +54,11 @@ export function AddLiquidityDialog({ onAdd }: { onAdd: (usdcAmount: number) => v
           Add liquidity
         </button>
       </DialogTrigger>
-      <DialogContent className="border-hair bg-panel flex flex-col gap-s4">
+      <DialogContent
+        onEscapeKeyDown={(e) => submitting && e.preventDefault()}
+        onPointerDownOutside={(e) => submitting && e.preventDefault()}
+        className="border-hair bg-panel flex flex-col gap-s4"
+      >
         <DialogTitle className="font-serif text-t5 font-medium">Add liquidity</DialogTitle>
         <DialogDescription className="text-t3 text-bone-2">
           Deposits mUSDC and mWETH into the pool via a real Uniswap v4 position.
@@ -46,8 +68,8 @@ export function AddLiquidityDialog({ onAdd }: { onAdd: (usdcAmount: number) => v
           <input
             type="number"
             min={0}
-            value={amount}
-            onChange={(e) => setAmount(Math.max(0, Math.round(Number(e.target.value) || 0)))}
+            value={raw}
+            onChange={(e) => setRaw(e.target.value)}
             className="border border-hair px-s3 py-s2 text-t4 num bg-transparent"
           />
         </label>
@@ -56,21 +78,19 @@ export function AddLiquidityDialog({ onAdd }: { onAdd: (usdcAmount: number) => v
           <DialogClose asChild>
             <button
               type="button"
-              className="text-t3 text-bone-2 hover:text-bone transition-colors duration-[140ms]"
+              disabled={submitting}
+              className="bg-transparent border-0 text-t3 text-bone-2 hover:text-bone transition-colors duration-[140ms] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
           </DialogClose>
           <button
             type="button"
-            disabled={amount <= 0}
-            onClick={() => {
-              onAdd(amount);
-              setOpen(false);
-            }}
+            disabled={amount <= 0 || submitting}
+            onClick={submit}
             className="bg-pink text-ink px-s4 py-s2 text-t3 font-medium hover:opacity-90 transition-opacity duration-[140ms] disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Add liquidity
+            {submitting ? "Confirm in wallet…" : "Add liquidity"}
           </button>
         </DialogFooter>
       </DialogContent>
