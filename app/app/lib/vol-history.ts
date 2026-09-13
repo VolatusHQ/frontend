@@ -29,6 +29,14 @@ export async function getVolSeverity(poolId: `0x${string}`): Promise<VolSeverity
   try {
     const res = await fetch(`${base.replace(/\/$/, "")}/vol-history?poolId=${poolId}`, {
       next: { revalidate: 15 },
+      // A cold Render free-tier instance can take 30-50s+ to wake up. Without
+      // its own timeout this fetch just waits — for the whole duration, on
+      // every ISR regeneration attempt — which is long enough to hit Vercel's
+      // own function timeout and kill the *entire* page's render, leaving it
+      // permanently stuck serving a stale cache rather than the graceful null
+      // this module's own doc promises. 5s is generous for a warm roller and
+      // short enough to never be the thing that takes the page down.
+      signal: AbortSignal.timeout(5_000),
     });
     if (!res.ok) return null;
 
