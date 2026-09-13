@@ -1,5 +1,5 @@
 import { Dial, type DialItem } from "../components/Dial";
-import { Pipeline } from "../components/Pipeline";
+import { ScrollFlow } from "../components/ScrollFlow";
 import { Reveal } from "../components/Reveal";
 
 const FEATURES: DialItem[] = [
@@ -33,9 +33,11 @@ export function Flow() {
   return (
     <section className="section section--tight">
       <div className="container">
-        <Reveal>
-          <Pipeline />
-        </Reveal>
+        {/* Not wrapped in <Reveal>: it drives its own scroll-linked state,
+            and a transformed ancestor would break the sticky panel inside
+            it (a `transform` on any ancestor creates a new containing
+            block, which position: sticky resolves against). */}
+        <ScrollFlow />
       </div>
     </section>
   );

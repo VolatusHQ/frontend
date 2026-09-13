@@ -1,11 +1,10 @@
 /**
- * A static, docs-column-safe restatement of the landing page's <Pipeline>.
- * Pipeline is built for the full 1120px container and falls back to a
- * horizontal scroller below 1080px — inside the docs two-column shell the
- * content column never gets that wide, so it always rendered as the cramped,
- * clipped scroller. This wraps instead of scrolling, and states every
- * caption up front rather than gating it behind hover, because a docs reader
- * scans top to bottom rather than sweeping a diagram left to right.
+ * A static, docs-column-safe restatement of the landing page's mechanism
+ * flow (`ScrollFlow`, in the `Flow` section). That component is a tall,
+ * scroll-driven section built for the full page — wrong shape for a docs
+ * content column, which is narrower and reached by a reader scanning top to
+ * bottom rather than scrolling through a dedicated section. This states
+ * every step's caption up front instead, as one flowing list.
  */
 
 type Step = { label: string; sub: string; ink: "violet" | "pink" | "yellow" | "bone"; desc: string };

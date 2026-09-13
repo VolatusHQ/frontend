@@ -341,176 +341,226 @@ em {
 }
 
 /* ============================================================
-   Pipeline — the variance chain. Colourful, hover-lit.
+   Scroll flow — the epoch mechanism, six steps, driven by scroll.
+   The page's one scroll-linked driver (DESIGN.md 7.5 budgets one): a
+   spine on the sticky left panel fills continuously with scroll
+   position, the current node lights pink, passed nodes settle to
+   yellow, and the reading column on the right advances in lockstep.
+   Falls back to a fully "connected" static state under reduced
+   motion or below 880px. See ScrollFlow.tsx.
    ============================================================ */
 
-.pipeline-frame {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(18px, 2.4vw, 32px);
+.c-pink {
+  color: var(--pink);
+}
+.c-yellow {
+  color: var(--yellow);
+}
+.c-violet {
+  color: var(--violet);
+}
+
+.scroll-flow {
   padding-block: clamp(8px, 1.5vw, 20px);
 }
 
-.pl-row {
-  display: flex;
-  align-items: stretch;
-  gap: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-block: 4px;
-}
-@media (max-width: 1080px) {
-  .pl-row {
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
-  }
+.scroll-flow__grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: clamp(32px, 4vw, 64px);
+  /* align-items stays default (stretch): the visual column's box must
+     span the full row height — matching the tall steps column — or its
+     sticky child has no room to travel and never appears to stick. */
 }
 
-.pl-node {
-  flex: 1 1 0;
-  min-width: 128px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: clamp(16px, 2vw, 26px) clamp(10px, 1.5vw, 18px);
-  border: 1.5px solid var(--n-line);
-  border-radius: 14px;
-  background: linear-gradient(180deg, var(--n-fill), transparent);
-  box-shadow: inset 0 0 24px var(--n-inset);
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  transition: transform 0.22s var(--ease-out), box-shadow 0.22s, background 0.22s, border-color 0.22s;
-}
-.pl-node:hover,
-.pl-node:focus-visible,
-.pl-node.is-lit {
-  transform: translateY(-5px);
-  border-color: var(--n);
-  background: linear-gradient(180deg, var(--n-fill-hi), var(--n-fill));
-  box-shadow: 0 0 30px var(--n-glow), inset 0 0 26px var(--n-inset);
-  outline: none;
-}
-/* the four inks */
-.pl-node--v {
-  --n: #9b6bff;
-  --n-line: rgba(155, 107, 255, 0.42);
-  --n-fill: rgba(155, 107, 255, 0.13);
-  --n-fill-hi: rgba(155, 107, 255, 0.32);
-  --n-inset: rgba(155, 107, 255, 0.12);
-  --n-glow: rgba(155, 107, 255, 0.5);
-}
-.pl-node--p {
-  --n: #ff3d9a;
-  --n-line: rgba(255, 61, 154, 0.44);
-  --n-fill: rgba(255, 61, 154, 0.14);
-  --n-fill-hi: rgba(255, 61, 154, 0.34);
-  --n-inset: rgba(255, 61, 154, 0.12);
-  --n-glow: rgba(255, 61, 154, 0.52);
-}
-.pl-node--y {
-  --n: #ffc93d;
-  --n-line: rgba(255, 201, 61, 0.44);
-  --n-fill: rgba(255, 201, 61, 0.13);
-  --n-fill-hi: rgba(255, 201, 61, 0.32);
-  --n-inset: rgba(255, 201, 61, 0.12);
-  --n-glow: rgba(255, 201, 61, 0.5);
-}
-.pl-node--w {
-  --n: #f3ece3;
-  --n-line: rgba(243, 236, 227, 0.4);
-  --n-fill: rgba(243, 236, 227, 0.09);
-  --n-fill-hi: rgba(243, 236, 227, 0.22);
-  --n-inset: rgba(243, 236, 227, 0.1);
-  --n-glow: rgba(243, 236, 227, 0.42);
-}
-.pl-node__label {
-  font-family: var(--font-mono);
-  font-size: clamp(15px, 1.5vw, 19px);
-  font-weight: 500;
-  color: var(--bone);
-  white-space: nowrap;
-}
-.pl-node__sub {
-  font-family: var(--font-mono);
-  font-size: clamp(10px, 1vw, 12px);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--n);
-  white-space: nowrap;
-}
-
-.pl-wire {
-  flex: 0 0 clamp(24px, 4vw, 68px);
-  align-self: center;
+.scroll-flow__visual {
   position: relative;
-  height: 2px;
-  background: var(--hair);
-  overflow: hidden;
 }
-.pl-wire::after {
+
+.scroll-flow__panel {
+  position: sticky;
+  top: 84px;
+  background: var(--panel);
+  border: 1px solid var(--hair);
+  padding: 26px 24px 22px;
+}
+
+.scroll-flow__kicker {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--t1);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bone-3);
+  margin: 0 0 22px;
+}
+.scroll-flow__kicker span {
+  color: var(--bone-2);
+  font-weight: 500;
+}
+
+.scroll-flow__track {
+  position: relative;
+}
+.scroll-flow__track::before {
   content: "";
   position: absolute;
-  inset: 0;
-  width: 46%;
-  background: linear-gradient(90deg, transparent, var(--pink), transparent);
-  transform: translateX(-120%);
+  left: 7px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: var(--hair-lit);
 }
-.is-running .pl-wire::after {
-  animation: wireflow 2.6s linear infinite;
-  animation-delay: var(--wd, 0s);
-}
-@keyframes wireflow {
-  to {
-    transform: translateX(320%);
-  }
+.scroll-flow__fill {
+  position: absolute;
+  left: 7px;
+  top: 6px;
+  width: 2px;
+  height: 0%;
+  background: var(--yellow);
+  transition: height 60ms linear;
 }
 
-.pl-caption {
-  text-align: center;
-  font-size: clamp(13px, 1.35vw, 16px);
-  line-height: 1.5;
-  color: var(--bone-2);
-  min-height: 2.6em;
-  max-width: 62ch;
-  margin-inline: auto;
-  transition: opacity 0.2s;
+.scroll-flow__node {
+  position: relative;
+  /* left padding clears the dot (0–16px, centred on the spine at 8px)
+     so node text never sits under it */
+  padding: 0 0 28px 26px;
 }
-.pl-caption strong {
-  color: var(--bone);
+.scroll-flow__node:last-child {
+  padding-bottom: 0;
+}
+.scroll-flow__dot {
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--r-full);
+  background: var(--ink);
+  border: 2px solid var(--bone-3);
+  transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s var(--ease-strike);
+}
+.scroll-flow__node.is-current .scroll-flow__dot {
+  background: var(--pink);
+  border-color: var(--pink);
+  transform: scale(1.15);
+}
+.scroll-flow__node.is-passed .scroll-flow__dot {
+  background: var(--yellow);
+  border-color: var(--yellow);
+}
+
+.scroll-flow__node-title {
+  font-family: var(--font-ui);
   font-weight: 500;
+  font-size: var(--t4);
+  color: var(--bone-3);
+  margin: 0 0 3px;
+  transition: color 0.3s ease, font-weight 0.3s ease;
+}
+.scroll-flow__node.is-current .scroll-flow__node-title {
+  color: var(--bone);
+  font-weight: 700;
+}
+.scroll-flow__node.is-passed .scroll-flow__node-title {
+  color: var(--bone-2);
+}
+.scroll-flow__node-sub {
+  font-size: var(--t2);
+  color: var(--bone-2);
+  margin: 0 0 5px;
+  line-height: 1.4;
+}
+.scroll-flow__node-tech {
+  font-family: var(--font-mono);
+  font-size: var(--t1);
+  color: var(--bone-2);
+  margin: 0;
+  opacity: 0.35;
+  transition: opacity 0.3s ease;
+  word-break: break-word;
+}
+.scroll-flow__node.is-current .scroll-flow__node-tech,
+.scroll-flow__node.is-passed .scroll-flow__node-tech {
+  opacity: 1;
 }
 
-@media (max-width: 640px) {
-  .pl-row {
-    flex-direction: column;
-    align-items: stretch;
+.scroll-flow__loop {
+  margin: 22px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--hair);
+  font-family: var(--font-mono);
+  font-size: var(--t1);
+  color: var(--bone-3);
+}
+
+.scroll-flow__steps {
+  display: flex;
+  flex-direction: column;
+}
+.scroll-flow__step {
+  min-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 2px solid var(--hair);
+  padding-left: 28px;
+  transition: border-color 0.3s ease;
+}
+.scroll-flow__step.is-active {
+  border-left-color: var(--pink);
+}
+.scroll-flow__step-no {
+  font-family: var(--font-mono);
+  font-size: var(--t2);
+  color: var(--bone-3);
+  letter-spacing: 0.08em;
+  margin: 0 0 10px;
+}
+.scroll-flow__step h3 {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: clamp(20px, 2.4vw, 26px);
+  color: var(--bone-2);
+  margin: 0 0 14px;
+  transition: color 0.3s ease;
+  text-wrap: balance;
+}
+.scroll-flow__step.is-active h3 {
+  color: var(--bone);
+}
+.scroll-flow__step p {
+  font-size: var(--t5);
+  line-height: 1.62;
+  color: var(--bone-2);
+  max-width: 52ch;
+  margin: 0;
+}
+
+@media (max-width: 880px) {
+  .scroll-flow__grid {
+    grid-template-columns: 1fr;
+    gap: var(--s5);
   }
-  .pl-node {
-    min-width: 0;
+  .scroll-flow__panel {
+    position: static;
   }
-  .pl-wire {
-    flex-basis: auto;
-    width: 2px;
-    height: clamp(18px, 5vw, 30px);
-    align-self: center;
-  }
-  .pl-wire::after {
-    width: 100%;
-    height: 46%;
-    background: linear-gradient(180deg, transparent, var(--pink), transparent);
-    transform: translateY(-120%);
-  }
-  .is-running .pl-wire::after {
-    animation: wireflow-v 2.6s linear infinite;
-    animation-delay: var(--wd, 0s);
+  .scroll-flow__step {
+    min-height: auto;
+    padding-block: 22px;
   }
 }
-@keyframes wireflow-v {
-  to {
-    transform: translateY(320%);
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-flow__dot,
+  .scroll-flow__node-title,
+  .scroll-flow__node-tech,
+  .scroll-flow__step,
+  .scroll-flow__step h3 {
+    transition: none;
   }
 }
 
@@ -1759,14 +1809,6 @@ em {
     opacity: 1;
     transform: none;
     transition: none;
-  }
-  .is-running .pl-dot,
-  .is-running .pl-node-lit,
-  .is-running .pl-wire-lit {
-    animation: none;
-  }
-  .pl-node-lit {
-    opacity: 0.5;
   }
   *,
   *::before,

@@ -6,10 +6,10 @@ export type DocSection = { id: string; label: string };
 
 /**
  * Sticky rail plus a scrollspy — the active section is set by which one
- * intersects the top band of the viewport, the same discrete
- * enter/leave-toggle pattern `Reveal` and `Pipeline` already use elsewhere on
- * the site (never a continuous scroll-linked transform; §7.5 caps the page at
- * one of those, and it's already spent on the fixed background parallax).
+ * intersects the top band of the viewport, a discrete enter/leave toggle
+ * like `Reveal` uses (never a continuous scroll-linked transform; §7.5 caps
+ * the page at two of those, and both slots are spent — the fixed background
+ * parallax and the landing page's `ScrollFlow` epoch spine).
  */
 export function DocsChrome({
   sections,
