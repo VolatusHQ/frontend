@@ -5,6 +5,7 @@ import type { Market } from "@/app/app/lib/market-data";
 import type { Side } from "@/app/app/lib/positions-context";
 import { estimateTokens } from "@/app/app/lib/trade";
 import { dec, int } from "@/app/app/lib/format";
+import { useAmountInput } from "@/app/app/lib/useAmountInput";
 import { cn } from "@/app/app/lib/utils";
 
 /**
@@ -28,7 +29,7 @@ export function TradePanel({
   busy: boolean;
 }) {
   const [side, setSide] = useState<Side>("long");
-  const [amount, setAmount] = useState(100);
+  const { raw, setRaw, amount } = useAmountInput(100);
 
   const isLong = side === "long";
   const price = isLong ? market.longPrice : market.shortPrice;
@@ -81,8 +82,8 @@ export function TradePanel({
           <input
             type="number"
             min={0}
-            value={amount}
-            onChange={(e) => setAmount(Math.max(0, Number(e.target.value) || 0))}
+            value={raw}
+            onChange={(e) => setRaw(e.target.value)}
             className="border border-hair px-s3 py-s2 text-t4 num bg-transparent"
           />
         </label>

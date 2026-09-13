@@ -7,6 +7,7 @@ import { useMarket } from "@/app/app/lib/market-context";
 import { REAL_POOL } from "@/app/app/lib/live-market";
 import { errorMessage } from "@/app/app/lib/onchain/writes";
 import { dec, int, pct, rate, usdc } from "@/app/app/lib/format";
+import { useAmountInput } from "@/app/app/lib/useAmountInput";
 import { Breadcrumb } from "./AppShell";
 import { Plate, Stat } from "./Stat";
 import { AddLiquidityDialog } from "./AddLiquidityDialog";
@@ -60,7 +61,7 @@ export function RealLiquidityDetail() {
   const [status, setStatus] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [protectAmount, setProtectAmount] = useState(10);
+  const { raw: protectRaw, setRaw: setProtectRaw, amount: protectAmount } = useAmountInput(10);
 
   async function run(label: string, action: () => Promise<void>) {
     if (!ready) {
@@ -148,8 +149,8 @@ export function RealLiquidityDetail() {
                   <input
                     type="number"
                     min={0}
-                    value={protectAmount}
-                    onChange={(e) => setProtectAmount(Math.max(0, Number(e.target.value) || 0))}
+                    value={protectRaw}
+                    onChange={(e) => setProtectRaw(e.target.value)}
                     className="border border-hair px-s3 py-s2 text-t4 num bg-transparent"
                   />
                 </label>

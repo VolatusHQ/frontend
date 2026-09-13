@@ -2,6 +2,7 @@
 
 import { coveragePct } from "@/app/app/lib/liquidity-data";
 import { int, pct } from "@/app/app/lib/format";
+import { useAmountInput } from "@/app/app/lib/useAmountInput";
 import { cn } from "@/app/app/lib/utils";
 
 const PRESETS = [0.25, 0.5, 0.75, 1] as const;
@@ -13,14 +14,26 @@ const PRESETS = [0.25, 0.5, 0.75, 1] as const;
  */
 export function ProtectionAmountControl({
   positionUsd,
-  value,
+  value: initialValue,
   onChange,
 }: {
   positionUsd: number;
   value: number;
   onChange: (protectedUsd: number) => void;
 }) {
+  // Raw-typing state lives here, not in the parent — see useAmountInput's
+  // doc for why a controlled input can't just echo back a rounded/clamped
+  // prop. `onChange` still tells the parent every time the clamped amount
+  // changes, since it's what actually feeds the premium calculation.
+  const { raw, setRaw, amount } = useAmountInput(initialValue);
+  const value = Math.min(positionUsd, amount);
   const coverage = coveragePct(value, positionUsd);
+
+  function updateRaw(next: string) {
+    setRaw(next);
+    const n = Math.min(positionUsd, Math.max(0, Math.round(Number(next) || 0)));
+    onChange(n);
+  }
 
   return (
     <div className="flex flex-col gap-s3">
@@ -32,7 +45,7 @@ export function ProtectionAmountControl({
               key={f}
               type="button"
               aria-pressed={active}
-              onClick={() => onChange(Math.round(positionUsd * f))}
+              onClick={() => updateRaw(String(Math.round(positionUsd * f)))}
               className={cn(
                 "flex-1 px-s3 py-[5px] text-t2 text-center transition-colors duration-[140ms]",
                 active ? "bg-panel-2 text-bone" : "text-bone-3 hover:text-bone",
@@ -50,11 +63,8 @@ export function ProtectionAmountControl({
           type="number"
           min={0}
           max={positionUsd}
-          value={value}
-          onChange={(e) => {
-            const n = Number(e.target.value) || 0;
-            onChange(Math.min(positionUsd, Math.max(0, Math.round(n))));
-          }}
+          value={raw}
+          onChange={(e) => updateRaw(e.target.value)}
           className="border border-hair px-s3 py-s2 text-t4 num bg-transparent"
         />
       </label>

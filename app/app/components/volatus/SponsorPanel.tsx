@@ -6,6 +6,7 @@ import { poolDisplay } from "@/app/app/lib/market-data";
 import { agoSeconds, compactUsd, int } from "@/app/app/lib/format";
 import { cn } from "@/app/app/lib/utils";
 import { SPONSOR_QUICK_AMOUNTS } from "@/app/app/lib/underwrite-data";
+import { useAmountInput } from "@/app/app/lib/useAmountInput";
 import type { LiveUnderwritePool } from "@/app/app/lib/live-market";
 import type { Sponsorship } from "@/app/app/lib/sponsorship-context";
 
@@ -21,7 +22,7 @@ import type { Sponsorship } from "@/app/app/lib/sponsorship-context";
 export function SponsorPanel({
   pool,
   sponsorship,
-  amount,
+  amount: initialAmount,
   onAmountChange,
   onSponsor,
   onAdjust,
@@ -41,6 +42,18 @@ export function SponsorPanel({
   // an impure call in the render body itself.
   const [nowSeconds] = useState(() => Math.floor(Date.now() / 1000));
 
+  // Raw-typing state lives here, not in the parent: `amount` is only ever
+  // set by this component's own input and preset buttons (see
+  // useAmountInput's doc for why a controlled input can't just echo back a
+  // rounded/re-parsed prop). `onAmountChange` still tells the parent every
+  // time it changes, since `sponsor(pool.slug, amount)` needs the number.
+  const { raw, setRaw, amount } = useAmountInput(initialAmount);
+
+  function updateRaw(next: string) {
+    setRaw(next);
+    onAmountChange(Math.max(0, Number(next) || 0));
+  }
+
   const amountControl = (
     <div className="flex flex-col gap-s3">
       <label className="flex flex-col gap-s1">
@@ -48,8 +61,8 @@ export function SponsorPanel({
         <input
           type="number"
           min={0}
-          value={amount}
-          onChange={(e) => onAmountChange(Math.max(0, Number(e.target.value) || 0))}
+          value={raw}
+          onChange={(e) => updateRaw(e.target.value)}
           className="border border-hair px-s3 py-s2 text-t4 num bg-transparent"
         />
       </label>
@@ -58,7 +71,7 @@ export function SponsorPanel({
           <button
             key={q}
             type="button"
-            onClick={() => onAmountChange(q)}
+            onClick={() => updateRaw(String(q))}
             aria-pressed={amount === q}
             className={cn(
               "py-s2 text-t2 num text-center border transition-colors duration-[140ms]",

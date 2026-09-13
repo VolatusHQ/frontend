@@ -8,6 +8,7 @@ import { Block, Stat } from "./Stat";
 import { cn } from "@/app/app/lib/utils";
 import { addr, int, usdc } from "@/app/app/lib/format";
 import { duration, usdcToNumber } from "@/app/app/lib/onchain/units";
+import { useAmountInput } from "@/app/app/lib/useAmountInput";
 import {
   ARC_USDC,
   LIVE_EPOCH_ID,
@@ -84,9 +85,9 @@ function TxStatus({ tx }: { tx: TxState }) {
 
 function SubscriberCard({ stream, address }: { stream: LiveStream; address: `0x${string}` }) {
   const [tx, setTx] = useState<TxState>({ status: "idle" });
-  const [notional, setNotional] = useState(0);
-  const [rate, setRate] = useState(0);
-  const [fundAmount, setFundAmount] = useState(0);
+  const { raw: notionalRaw, setRaw: setNotionalRaw, amount: notional } = useAmountInput(0);
+  const { raw: rateRaw, setRaw: setRateRaw, amount: rate } = useAmountInput(0);
+  const { raw: fundRaw, setRaw: setFundRaw, amount: fundAmount } = useAmountInput(0);
 
   const subRead = useReadContract({
     address: SIGMA_STREAM,
@@ -183,8 +184,8 @@ function SubscriberCard({ stream, address }: { stream: LiveStream; address: `0x$
                 <input
                   type="number"
                   min={0}
-                  value={fundAmount}
-                  onChange={(ev) => setFundAmount(Math.max(0, Number(ev.target.value) || 0))}
+                  value={fundRaw}
+                  onChange={(ev) => setFundRaw(ev.target.value)}
                   className="border border-hair px-s3 py-s2 text-t3 num bg-transparent"
                 />
               </label>
@@ -194,7 +195,7 @@ function SubscriberCard({ stream, address }: { stream: LiveStream; address: `0x$
                 onClick={() =>
                   run("Approving + funding…", async () => {
                     await doFund(fundAmount);
-                    setFundAmount(0);
+                    setFundRaw("0");
                   })
                 }
                 className={PRIMARY_BUTTON}
@@ -231,8 +232,8 @@ function SubscriberCard({ stream, address }: { stream: LiveStream; address: `0x$
               <input
                 type="number"
                 min={0}
-                value={notional}
-                onChange={(ev) => setNotional(Math.max(0, Number(ev.target.value) || 0))}
+                value={notionalRaw}
+                onChange={(ev) => setNotionalRaw(ev.target.value)}
                 className="border border-hair px-s3 py-s2 text-t3 num bg-transparent"
               />
             </label>
@@ -242,8 +243,8 @@ function SubscriberCard({ stream, address }: { stream: LiveStream; address: `0x$
                 type="number"
                 min={0}
                 step="0.000001"
-                value={rate}
-                onChange={(ev) => setRate(Math.max(0, Number(ev.target.value) || 0))}
+                value={rateRaw}
+                onChange={(ev) => setRateRaw(ev.target.value)}
                 className="border border-hair px-s3 py-s2 text-t3 num bg-transparent"
               />
             </label>
@@ -252,8 +253,8 @@ function SubscriberCard({ stream, address }: { stream: LiveStream; address: `0x$
               <input
                 type="number"
                 min={0}
-                value={fundAmount}
-                onChange={(ev) => setFundAmount(Math.max(0, Number(ev.target.value) || 0))}
+                value={fundRaw}
+                onChange={(ev) => setFundRaw(ev.target.value)}
                 className="border border-hair px-s3 py-s2 text-t3 num bg-transparent"
               />
             </label>
@@ -287,7 +288,7 @@ function SubscriberCard({ stream, address }: { stream: LiveStream; address: `0x$
 
 function UnderwriterCard({ address }: { address: `0x${string}` }) {
   const [tx, setTx] = useState<TxState>({ status: "idle" });
-  const [amount, setAmount] = useState(0);
+  const { raw: amountRaw, setRaw: setAmountRaw, amount } = useAmountInput(0);
 
   const sharesRead = useReadContract({
     address: SIGMA_STREAM,
@@ -339,8 +340,8 @@ function UnderwriterCard({ address }: { address: `0x${string}` }) {
             <input
               type="number"
               min={0}
-              value={amount}
-              onChange={(ev) => setAmount(Math.max(0, Number(ev.target.value) || 0))}
+              value={amountRaw}
+              onChange={(ev) => setAmountRaw(ev.target.value)}
               className="border border-hair px-s3 py-s2 text-t3 num bg-transparent"
             />
           </label>
@@ -359,7 +360,7 @@ function UnderwriterCard({ address }: { address: `0x${string}` }) {
                   chainId: arcTestnet.id,
                 });
                 await waitForTransactionReceipt(wagmiConfig, { hash, chainId: arcTestnet.id });
-                setAmount(0);
+                setAmountRaw("0");
               })
             }
             className={PRIMARY_BUTTON}
