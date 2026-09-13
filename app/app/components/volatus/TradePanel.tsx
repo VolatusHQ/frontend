@@ -18,9 +18,14 @@ import { cn } from "@/app/app/lib/utils";
 export function TradePanel({
   market,
   onBuy,
+  busy,
 }: {
   market: Market;
   onBuy: (side: Side, usdcAmount: number) => void;
+  /** True while a Buy or Redeem is already in flight — disables the button
+   *  so a second click can't fire an overlapping approve + swap sequence
+   *  against the same wallet (see MarketDetail's onBuy/onRedeem doc). */
+  busy: boolean;
 }) {
   const [side, setSide] = useState<Side>("long");
   const [amount, setAmount] = useState(100);
@@ -89,13 +94,13 @@ export function TradePanel({
         <button
           type="button"
           onClick={() => onBuy(side, amount)}
-          disabled={amount <= 0}
+          disabled={amount <= 0 || busy}
           className={cn(
             "px-s4 py-s3 text-ink text-t3 text-center font-medium hover:opacity-90 transition-opacity duration-[140ms] disabled:opacity-40 disabled:cursor-not-allowed",
             isLong ? "bg-up" : "bg-down",
           )}
         >
-          Buy {label}
+          {busy ? "Confirm in wallet…" : `Buy ${label}`}
         </button>
       </div>
     </div>

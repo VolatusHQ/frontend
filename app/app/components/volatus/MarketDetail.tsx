@@ -32,6 +32,15 @@ export function MarketDetail({
   const router = useRouter();
   const [status, setStatus] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  // Neither the Buy button nor a redeem row disabled itself while its own
+  // transaction was in flight, so a second click (or a MetaMask popup left
+  // open while the user clicked again) fired a second overlapping approve +
+  // swap sequence against the same wallet — two transactions racing for the
+  // same nonce, which is what "nonce too low" and MetaMask's own corrupted
+  // "gasLimit is null" error both actually were. One in-flight flag for the
+  // whole panel is simpler than tracking it per action and just as correct,
+  // since Buy and Redeem were never meant to run concurrently anyway.
+  const [busy, setBusy] = useState(false);
   // The chart's own feed: `swaps` (server-rendered, this epoch's history so
   // far) plus whatever's landed since, pushed from the roller over a real
   // WebSocket rather than waiting on `router.refresh()` or the next ISR tick.
@@ -43,6 +52,8 @@ export function MarketDetail({
       setStatus("Connect a wallet first.");
       return;
     }
+    if (busy) return;
+    setBusy(true);
     setFailed(false);
     setStatus(`Redeeming epoch ${epochId} ${isLong ? "STORM" : "CALM"}…`);
     try {
@@ -52,6 +63,8 @@ export function MarketDetail({
     } catch (e) {
       setFailed(true);
       setStatus(errorMessage(e));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -61,6 +74,8 @@ export function MarketDetail({
       setStatus("Connect a wallet first.");
       return;
     }
+    if (busy) return;
+    setBusy(true);
     setFailed(false);
     setStatus(
       side === "long"
@@ -74,6 +89,8 @@ export function MarketDetail({
     } catch (e) {
       setFailed(true);
       setStatus(errorMessage(e));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -87,7 +104,7 @@ export function MarketDetail({
         </div>
 
         <aside className="flex flex-col gap-s5 min-w-0 lg:sticky lg:top-s4">
-          <TradePanel market={market} onBuy={onBuy} />
+          <TradePanel market={market} onBuy={onBuy} busy={busy} />
           {status ? (
             <p className={`text-t2 m-0 ${failed ? "text-down" : "text-bone-2"}`}>{status}</p>
           ) : null}
