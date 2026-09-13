@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { getMarket, poolDisplay } from "../../lib/market-data";
 import { getLiquidityParams } from "../../lib/liquidity-data";
 import { useLiquidity } from "../../lib/liquidity-context";
+import { REAL_POOL } from "../../lib/live-market";
 import { Breadcrumb } from "../../components/volatus/AppShell";
 import { Plate } from "../../components/volatus/Stat";
 import { LiquidityPoolHeader } from "../../components/volatus/LiquidityPoolHeader";
@@ -15,15 +16,24 @@ import { VolatilityHistoryChart } from "../../components/volatus/VolatilityHisto
 import { LpRiskEstimate } from "../../components/volatus/LpRiskEstimate";
 import { ProtectionPanel } from "../../components/volatus/ProtectionPanel";
 import { AddLiquidityDialog } from "../../components/volatus/AddLiquidityDialog";
+import { RealLiquidityDetail } from "../../components/volatus/RealLiquidityDetail";
 
 /**
  * The main Liquidity experience. Left column moves through the LP's
  * economic story — position (header) → pool conditions → what the market
  * is betting → what that could mean for the position. Right rail is the
  * decision: how much to protect, what the stream costs, start it.
+ *
+ * The real pool (`REAL_POOL.slug`) is not in `market-data.ts`'s mock
+ * `MARKETS` map at all — `getMarket` would 404 it — and even a matching slug
+ * wouldn't help, since every component below depends on `liquidity-data.ts`'s
+ * hand-authored per-pool numbers with no honest equivalent for a real
+ * position. It gets its own, simpler, fully-real detail view instead.
  */
 export default function LiquidityPoolPage({ params }: { params: Promise<{ pool: string }> }) {
   const { pool: slug } = use(params);
+  if (slug === REAL_POOL.slug) return <RealLiquidityDetail />;
+
   const market = getMarket(slug);
   if (!market) notFound();
 

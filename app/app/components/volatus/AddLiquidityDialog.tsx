@@ -15,8 +15,12 @@ import { int } from "@/app/app/lib/format";
 /**
  * A secondary flow — adding to the position, not protecting it. Kept
  * visually subordinate to Start protection: the trigger is a text link,
- * never a filled button. No real liquidity provision; the confirm just
- * grows the local position value so the prototype feels connected.
+ * never a filled button.
+ *
+ * `onAdd` is real on the one pool this app actually trades (see
+ * `liquidity-context.tsx`'s `addLiquidity` — a genuine Permit2 approval and
+ * Uniswap v4 position mint) and a no-op everywhere else. This component has
+ * no way to tell which it's wired to, so it never claims either way.
  */
 export function AddLiquidityDialog({ onAdd }: { onAdd: (usdcAmount: number) => void }) {
   const [open, setOpen] = useState(false);
@@ -35,7 +39,7 @@ export function AddLiquidityDialog({ onAdd }: { onAdd: (usdcAmount: number) => v
       <DialogContent className="border-hair bg-panel flex flex-col gap-s4">
         <DialogTitle className="font-serif text-t5 font-medium">Add liquidity</DialogTitle>
         <DialogDescription className="text-t3 text-bone-2">
-          Prototype — no liquidity is actually provided.
+          Deposits mUSDC and mWETH into the pool via a real Uniswap v4 position.
         </DialogDescription>
         <label className="flex flex-col gap-s1">
           <span className="lbl">Amount (USDC)</span>

@@ -1,5 +1,6 @@
 import { PageHead } from "../components/volatus/AppShell";
 import { LiquidityPositionsTable } from "../components/volatus/LiquidityPositionsTable";
+import { RealLiquidityCallout } from "../components/volatus/RealLiquidityCallout";
 
 /**
  * The LP's portfolio of existing Uniswap liquidity. Its job is to surface
@@ -14,6 +15,8 @@ export default function LiquidityPage() {
         title="Liquidity"
         lede="The liquidity you provide on Uniswap is exposed to volatility. Open a position to see how exposed it is and protect it."
       />
+      <RealLiquidityCallout />
+
       <div className="flex flex-col gap-s4">
         <span className="lbl">Your positions</span>
         <LiquidityPositionsTable />
